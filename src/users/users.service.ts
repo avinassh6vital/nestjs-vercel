@@ -2,25 +2,38 @@ import { Injectable } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './entities/user.entity';
-import { InjectModel } from '@nestjs/sequelize';
+//import { InjectModel } from '@nestjs/sequelize';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class UsersService {
+
   constructor(
-    @InjectModel(User)
-    private userModel: typeof User,
+    @InjectRepository(User)
+    private usersRepository: Repository<User>,
   ) {}
+  // constructor(
+  //   @InjectModel(User)
+  //   private userModel: typeof User,
+  // ) {}
   // create(createUserDto: CreateUserDto) {
   //   return 'This action adds a new user';
   // }
+  // create(createUserDto: CreateUserDto) {
+  //   return this.userModel.create(createUserDto as any);
+  // }
+
   create(createUserDto: CreateUserDto) {
-    return this.userModel.create(createUserDto as any);
+    const user = this.usersRepository.create(createUserDto as any);
+    return this.usersRepository.save(user);
   }
 
   findAll(): Promise<User[]> {
     //return this.userRepository.findAll();
     //return `This action returns all users`;
-    return this.userModel.findAll();
+    //return this.userModel.findAll();
+    return this.usersRepository.find();
   }
 
   // findAll() {
@@ -32,23 +45,27 @@ export class UsersService {
   //   return `This action returns a #${id} user`;
   // }
 
-  findOne(id: number) {
-    return this.userModel.findByPk(id);
-    return `This action returns a #${id} user`;
+  findOne(id: number): Promise<User | null> {
+    return this.usersRepository.findOneBy({ id });
+    //return this.userModel.findByPk(id);
+   // return `This action returns a #${id} user`;
   }
 
-  update(id: number, updateUserDto: UpdateUserDto) {
-    return this.userModel.update(updateUserDto, { where: { id } });
-    return `This action updates a #${id} user`;
+  async update(id: number, updateUserDto: UpdateUserDto) {
+    await this.usersRepository.update(id, updateUserDto as any);
+    return this.usersRepository.findOneBy({ id });
   }
 
   // update(id: number, updateUserDto: UpdateUserDto) {
   //   return `This action updates a #${id} user`;
   // }
 
-  async remove(id: number): Promise<number> {
-    const rowsDeleted = await this.userModel.destroy({ where: { id } });
-    return rowsDeleted;
+  // async remove(id: number): Promise<number> {
+  //   const rowsDeleted = await this.userModel.destroy({ where: { id } });
+  //   return rowsDeleted;
+  // }
+  async remove(id: number): Promise<void> {
+    await this.usersRepository.delete({ id });
   }
 
   // remove(id: number) {
