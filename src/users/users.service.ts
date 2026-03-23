@@ -29,11 +29,22 @@ export class UsersService {
     return this.usersRepository.save(user);
   }
 
-  findAll(): Promise<User[]> {
-    //return this.userRepository.findAll();
-    //return `This action returns all users`;
-    //return this.userModel.findAll();
-    return this.usersRepository.find();
+  // findAll(): Promise<User[]> {
+  //   //return this.userRepository.findAll();
+  //   //return `This action returns all users`;
+  //   //return this.userModel.findAll();
+  //   return this.usersRepository.find();
+  // }
+
+  // async findAll(): Promise<User[]> {
+  //   return this.usersRepository.find();
+  // }
+
+  async findAll(): Promise<User[]> {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const users = await this.usersRepository.query('SELECT * FROM users');
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+    return users;
   }
 
   // findAll() {

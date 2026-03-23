@@ -20,7 +20,6 @@ import { TypeOrmModule } from '@nestjs/typeorm';
       ...databaseConfig,
       entities: [User],
     }),
-      
     UsersModule,
   ],
   controllers: [AppController],
