@@ -23,7 +23,13 @@
 //   age: number;
 // }
 
-import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 
 @Entity('users')
 export class User {
@@ -38,4 +44,12 @@ export class User {
 
   @Column({ nullable: true })
   name: string;
+
+  // This column will be automatically set on creation
+  @CreateDateColumn({ name: 'created_at' })
+  createdAt!: Date;
+
+  // This column will be automatically updated on each save
+  @UpdateDateColumn({ name: 'updated_at' })
+  updatedAt!: Date;
 }
