@@ -9,7 +9,7 @@ import { Repository } from 'typeorm';
 export class EmployeeService {
   constructor(
     @InjectRepository(Employee)
-    private employeeRepository: Repository<Employee> 
+    private employeeRepository: Repository<Employee>,
   ) {}
 
   create(createEmployeeDto: CreateEmployeeDto) {
@@ -27,13 +27,14 @@ export class EmployeeService {
     // return `This action returns a #${id} employee`;
   }
 
-  update(id: string, updateEmployeeDto: UpdateEmployeeDto) {
-    return this.employeeRepository.update(id, updateEmployeeDto);
-    // return `This action updates a #${id} employee`;
+  update(uuid: string, updateEmployeeDto: UpdateEmployeeDto) {
+   // return `This action updates a #${id} employee`;
+   const employee = this.employeeRepository.update(uuid, updateEmployeeDto);
+   return employee;
   }
 
-  remove(id: string) {
-    return this.employeeRepository.delete(id);
-    // return `This action removes a #${id} employee`;
+  async remove(id: string) {
+    await this.employeeRepository.delete({ id });
+    //return `This action removes a #${id} employee`;
   }
 }

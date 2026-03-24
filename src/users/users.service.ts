@@ -75,8 +75,9 @@ export class UsersService {
   //   const rowsDeleted = await this.userModel.destroy({ where: { id } });
   //   return rowsDeleted;
   // }
-  async remove(id: number): Promise<void> {
+  async remove(id: number){
     await this.usersRepository.delete({ id });
+    return { message: 'success deleted', status: 'success', id };
   }
 
   // remove(id: number) {

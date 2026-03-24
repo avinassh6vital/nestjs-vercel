@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, ParseUUIDPipe } from '@nestjs/common';
 import { EmployeeService } from './employee.service';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
@@ -17,18 +17,25 @@ export class EmployeeController {
     return this.employeeService.findAll();
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.employeeService.findOne(id);
+  @Get(':uuid')
+  //findOne(@Param('id') id: string) {
+  async findOne(@Param('uuid', new ParseUUIDPipe()) uuid: string) {
+    return this.employeeService.findOne(uuid);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateEmployeeDto: UpdateEmployeeDto) {
-    return this.employeeService.update(id, updateEmployeeDto);
+  @Patch(':uuid')
+  async update(@Param('uuid', new ParseUUIDPipe()) uuid: string, @Body() updateEmployeeDto: UpdateEmployeeDto) {
+    await this.employeeService.update(uuid, updateEmployeeDto);
+    return {
+      message: 'updated successfully',
+      id: uuid,
+      Body: updateEmployeeDto,
+    };
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.employeeService.remove(id);
+  @Delete(':uuid')
+  async remove(@Param('uuid', new ParseUUIDPipe()) uuid: string) {
+    await this.employeeService.remove(uuid);
+    return { message: 'deleted successfully', id: uuid };
   }
 }
