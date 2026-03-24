@@ -53,3 +53,64 @@ export class User {
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt!: Date;
 }
+
+
+
+//reading purpose
+
+//     @PrimaryGeneratedColumn()
+//     id: number
+
+//     @Column()
+//     firstName: string
+
+//     @Column()
+//     lastName: string
+
+//     @Column()
+//     isActive: boolean
+
+//      @PrimaryColumn()
+//     id: number
+
+//     @PrimaryGeneratedColumn("uuid")
+//     id: string
+
+//     @Column("int")
+
+//     @Column("varchar", { length: 100 })
+
+//     @Column({ type: "int" })
+
+//     @Column({ type: "boolean" })
+    
+// export enum UserRole {
+//     ADMIN = "admin",
+//     EDITOR = "editor",
+//     GHOST = "ghost",
+// }
+
+
+// @Column({
+//         type: "enum",
+//         enum: UserRole,
+//         default: UserRole.GHOST,
+//     })
+//     role: UserRole
+
+
+//     @Column({
+//         type: "enum",
+//         enum: ["admin", "editor", "ghost"],
+//         default: "ghost"
+//     })
+//     role: UserRoleType
+
+//     @Column("simple-array")
+//     names: string[]
+
+//     const user = new User()
+// user.names = ["Alexander", "Alex", "Sasha", "Shurik"]
+    //reading purpose
+
+    //reading purpose

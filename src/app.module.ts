@@ -2,10 +2,12 @@ import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UsersModule } from './users/users.module';
-import { SequelizeModule } from '@nestjs/sequelize';
+//import { SequelizeModule } from '@nestjs/sequelize';
 import { databaseConfig } from './database/config';
-import { User } from './users/entities/user.entity';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { EmployeeModule } from './employee/employee.module';
+import { User } from './users/entities/user.entity';
+import { Employee } from './employee/entities/employee.entity';
 
 @Module({
   imports: [
@@ -18,9 +20,11 @@ import { TypeOrmModule } from '@nestjs/typeorm';
     // }),
     TypeOrmModule.forRoot({
       ...databaseConfig,
-      entities: [User],
+      entities: [User, Employee],
+     // entities: [__dirname + '/entity/*{.js,.ts}'],
     }),
     UsersModule,
+    EmployeeModule,
   ],
   controllers: [AppController],
   providers: [AppService],
