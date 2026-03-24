@@ -25,8 +25,8 @@ export class UsersService {
   // }
 
   create(createUserDto: CreateUserDto) {
-    const user = this.usersRepository.create(createUserDto as any);
-    return this.usersRepository.save(user);
+    const users = this.usersRepository.create(createUserDto);
+    return this.usersRepository.save(users);
   }
 
   // findAll(): Promise<User[]> {
@@ -63,7 +63,7 @@ export class UsersService {
   }
 
   async update(id: number, updateUserDto: UpdateUserDto) {
-    await this.usersRepository.update(id, updateUserDto as any);
+    await this.usersRepository.update(id, updateUserDto);
     return this.usersRepository.findOneBy({ id });
   }
 
