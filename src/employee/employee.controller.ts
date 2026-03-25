@@ -1,4 +1,16 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, ParseUUIDPipe, HttpStatus, HttpException, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  ParseUUIDPipe,
+  HttpStatus,
+  HttpException,
+  Query,
+} from '@nestjs/common';
 import { EmployeeService } from './employee.service';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
@@ -30,9 +42,32 @@ export class EmployeeController {
     @Query('page') page: number,
     @Query('limit') limit: number,
     @Query('searchTerm') searchTerm: string,
+    @Query('sort') sort: string,
+    @Query() query: Record<string, any>,
   ) {
-    const result = await this.employeeService.findAll(page, limit, searchTerm);
-    return result;
+    try {
+      const filters = { ...query };
+      delete filters.page;
+      delete filters.limit;
+      delete filters.searchTerm;
+      delete filters.sort;
+
+      const result = await this.employeeService.findAll(
+        page,
+        limit,
+        searchTerm,
+        sort,
+        filters,
+      );
+      return result;
+    } catch (error) {
+      throw new HttpException(
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
+        error.message || 'Internal server error',
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
   @Get(':uuid')
@@ -58,20 +93,47 @@ export class EmployeeController {
 
   @Patch(':uuid')
   async update(
-    @Param('uuid', new ParseUUIDPipe()) uuid: string,
+    @Param(
+      'uuid',
+      new ParseUUIDPipe({ errorHttpStatusCode: HttpStatus.NOT_ACCEPTABLE }),
+    )
+    uuid: string,
     @Body() updateEmployeeDto: UpdateEmployeeDto,
   ) {
-    await this.employeeService.update(uuid, updateEmployeeDto);
-    return {
-      message: 'updated successfully',
-      id: uuid,
-      Body: updateEmployeeDto,
-    };
+    try {
+      await this.employeeService.update(uuid, updateEmployeeDto);
+      return {
+        message: 'updated successfully',
+        id: uuid,
+        Body: updateEmployeeDto,
+      };
+    } catch (error) {
+      throw new HttpException(
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
+        error.message || 'Internal server error',
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
-
   @Delete(':uuid')
-  async remove(@Param('uuid', new ParseUUIDPipe()) uuid: string) {
-    await this.employeeService.remove(uuid);
-    return { message: 'deleted successfully', id: uuid };
+  async remove(
+    @Param(
+      'uuid',
+      new ParseUUIDPipe({ errorHttpStatusCode: HttpStatus.NOT_ACCEPTABLE }),
+    )
+    uuid: string,
+  ) {
+    try {
+      await this.employeeService.remove(uuid);
+      return { message: 'deleted successfully', id: uuid };
+    } catch (error) {
+      throw new HttpException(
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
+        error.message || 'Internal server error',
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 }

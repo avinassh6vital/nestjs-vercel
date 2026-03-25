@@ -3,7 +3,7 @@ import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Employee } from './entities/employee.entity';
-import { FindManyOptions, Repository, Like } from 'typeorm';
+import { FindManyOptions, Repository, Like, Between } from 'typeorm';
 
 @Injectable()
 export class EmployeeService {
@@ -17,22 +17,140 @@ export class EmployeeService {
     return this.employeeRepository.save(employee);
   }
 
-  async findAll(page = 1, limit = 10, searchTerm = '') {
+  // async findAll(
+  //   page = 1,
+  //   limit = 10,
+  //   searchTerm = '',
+  //   sort = '',
+  //   filters: Record<string, any> = {},
+  // ) {
+  //   const skip = (page - 1) * limit;
+
+  //   const order: Record<string, 'ASC' | 'DESC'> = {};
+  //   if (sort) {
+  //     // e.g., sort="name:ASC,createdAt:DESC"
+  //     const sortFields = sort.split(',');
+  //     sortFields.forEach((field) => {
+  //       const [key, direction] = field.split(':');
+  //       order[key] = direction?.toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
+  //     });
+  //   } else {
+  //     order.createdAt = 'DESC'; // Important: Always order results for predictable pagination.
+  //   }
+
+  //   const where: Record<string, any> = {};
+  //   if (filters && Object.keys(filters).length > 0) {
+  //     const likeFields = ['name', 'gender', 'designation', 'department'];
+
+  //     Object.keys(filters).forEach((key) => {
+  //       const value = String(filters[key]);
+  //       if (value) {
+  //         if (
+  //           key === 'createdAt' ||
+  //           key === 'updatedAt' ||
+  //           key.toLowerCase().includes('date')
+  //         ) {
+  //           const startOfDay = new Date(value);
+  //           startOfDay.setHours(0, 0, 0, 0);
+  //           const endOfDay = new Date(value);
+  //           endOfDay.setHours(23, 59, 59, 999);
+  //           if (!isNaN(startOfDay.getTime())) {
+  //             where[key] = Between(startOfDay, endOfDay);
+  //           }
+  //         } else if (likeFields.includes(key)) {
+  //           where[key] = Like(`%${value}%`);
+  //         } else {
+  //           where[key] = filters[key];
+  //         }
+  //       }
+  //     });
+  //   }
+
+  //   const findOptions: FindManyOptions<any> = {
+  //     take: limit,
+  //     skip: skip,
+  //     order,
+  //   };
+
+  //   if (searchTerm) {
+  //     // Add search condition. Using `Like` for partial matching in PostgreSQL.
+  //     findOptions.where = [{ ...where, name: Like(`%${searchTerm}%`) }];
+  //   } else if (Object.keys(where).length > 0) {
+  //     findOptions.where = where;
+  //   }
+  //   const [data, total] =
+  //     await this.employeeRepository.findAndCount(findOptions);
+  //   return {
+  //     data,
+  //     total,
+  //     page,
+  //     limit,
+  //   };
+  // }
+
+   async findAll(
+    page = 1,
+    limit = 10,
+    searchTerm = '',
+    sort = '',
+    filters: Record<string, any> = {},
+  ) {
     const skip = (page - 1) * limit;
+
+    const order: Record<string, 'ASC' | 'DESC'> = {};
+    if (sort) {
+      // e.g., sort="name:ASC,createdAt:DESC"
+      const sortFields = sort.split(',');
+      sortFields.forEach((field) => {
+        const [key, direction] = field.split(':');
+        order[key] = direction?.toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
+      });
+    } else {
+      order.createdAt = 'DESC'; // Important: Always order results for predictable pagination.
+    }
+
+    const where: Record<string, any> = {};
+    if (filters && Object.keys(filters).length > 0) {
+      const likeFields = ['name', 'gender', 'designation', 'department'];
+
+      Object.keys(filters).forEach((key) => {
+        const value = String(filters[key]);
+        if (value) {
+          if (
+            key === 'createdAt' ||
+            key === 'updatedAt' ||
+            key.toLowerCase().includes('date')
+          ) {
+            const startOfDay = new Date(value);
+            startOfDay.setHours(0, 0, 0, 0);
+            const endOfDay = new Date(value);
+            endOfDay.setHours(23, 59, 59, 999);
+            if (!isNaN(startOfDay.getTime())) {
+              where[key] = Between(startOfDay, endOfDay);
+            }
+          } else if (likeFields.includes(key)) {
+            where[key] = Like(`%${value}%`);
+          } else {
+            where[key] = filters[key];
+          }
+        }
+      });
+    }
+
     const findOptions: FindManyOptions<any> = {
       take: limit,
       skip: skip,
-      order: { createdAt: 'DESC' }, // Important: Always order results for predictable pagination.
+      order,
     };
+
     if (searchTerm) {
       // Add search condition. Using `Like` for partial matching in PostgreSQL.
-      // This example searches in a "title" and "description" field.
-      // Adjust the fields based on your entity structure.
-      findOptions.where = [
-        { name: Like(`%${searchTerm}%`) }
-      ];
+      findOptions.where = [{ ...where, name: Like(`%${searchTerm}%`) }];
+    } else if (Object.keys(where).length > 0) {
+      findOptions.where = where;
     }
-    const [data, total] = await this.employeeRepository.findAndCount(findOptions);
+    const [data, total] =
+      await this.employeeRepository.findAndCount(findOptions);
     return {
       data,
       total,
@@ -43,17 +161,14 @@ export class EmployeeService {
 
   findOne(id: string) {
     return this.employeeRepository.findOne({ where: { id } });
-    // return `This action returns a #${id} employee`;
   }
 
   update(uuid: string, updateEmployeeDto: UpdateEmployeeDto) {
-   // return `This action updates a #${id} employee`;
-   const employee = this.employeeRepository.update(uuid, updateEmployeeDto);
-   return employee;
+    const employee = this.employeeRepository.update(uuid, updateEmployeeDto);
+    return employee;
   }
 
   async remove(id: string) {
     await this.employeeRepository.delete({ id });
-    //return `This action removes a #${id} employee`;
   }
 }
