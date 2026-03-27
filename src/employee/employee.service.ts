@@ -11,7 +11,7 @@ export class EmployeeService {
   constructor(
     @InjectRepository(Employee)
     private employeeRepository: Repository<Employee>,
-    private readonly logger = new Logger(EmployeeService.name),
+    //private readonly logger = new Logger(EmployeeService.name),
   ) {}
 
   create(createEmployeeDto: CreateEmployeeDto) {
@@ -104,7 +104,7 @@ export class EmployeeService {
       sort,
       filters,
     );
-    this.logger.log('Doing something with timestamp here ->', findOptions);
+   // this.logger.log('Doing something with timestamp here ->', findOptions);
     const [data, total] =
       await this.employeeRepository.findAndCount(findOptions);
     return {

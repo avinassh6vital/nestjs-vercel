@@ -8,6 +8,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { EmployeeModule } from './employee/employee.module';
 import { User } from './users/entities/user.entity';
 import { Employee } from './employee/entities/employee.entity';
+import { AuthModule } from './auth/auth.module';
+import { UsersDataModule } from './users-data/users-data.module';
 
 @Module({
   imports: [
@@ -25,6 +27,8 @@ import { Employee } from './employee/entities/employee.entity';
     }),
     UsersModule,
     EmployeeModule,
+    AuthModule,
+    UsersDataModule,
   ],
   controllers: [AppController],
   providers: [AppService],
