@@ -9,6 +9,7 @@ import {
   MoreThanOrEqual,
   Equal,
   FindOptionsWhere,
+  FindManyOptions,
 } from 'typeorm';
 
 export function buildDynamicFilters<T>(filters: Record<string, any>): FindOptionsWhere<T> {
@@ -121,4 +122,37 @@ export function buildSortOptions(sort?: string) {
     order.createdAt = 'DESC'; // Important: Always order results for predictable pagination.
   }
   return order;
+}
+
+export function buildQueryOptions<T>(
+  page = 1,
+  limit = 10,
+  searchTerm = '',
+  sort = '',
+  filters: Record<string, any> = {},
+  searchFields: string[] = ['name'],
+): FindManyOptions<T> {
+  const skip = (page - 1) * limit;
+
+  const order = buildSortOptions(sort);
+
+  const where = buildDynamicFilters<T>(filters);
+
+  const findOptions: FindManyOptions<any> = {
+    take: limit,
+    skip: skip,
+    order: order as any,
+  };
+
+  if (searchTerm && searchFields.length > 0) {
+    // Add search condition. Using `Like` for partial matching in PostgreSQL.
+    findOptions.where = searchFields.map((field) => ({
+      ...where,
+      [field]: Like(`%${searchTerm}%`),
+    })) as any;
+  } else if (Object.keys(where).length > 0) {
+    findOptions.where = where;
+  }
+
+  return findOptions;
 }

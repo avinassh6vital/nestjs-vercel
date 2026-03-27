@@ -1,16 +1,17 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Employee } from './entities/employee.entity';
-import { FindManyOptions, Repository, Like } from 'typeorm';
-import { buildDynamicFilters, buildSortOptions } from '../utils/filter.util';
+import { Repository } from 'typeorm';
+import { buildQueryOptions } from '../utils/filter.util';
 
 @Injectable()
 export class EmployeeService {
   constructor(
     @InjectRepository(Employee)
     private employeeRepository: Repository<Employee>,
+    private readonly logger = new Logger(EmployeeService.name),
   ) {}
 
   create(createEmployeeDto: CreateEmployeeDto) {
@@ -89,31 +90,21 @@ export class EmployeeService {
   //   };
   // }
 
-   async findAll(
+  async findAll(
     page = 1,
     limit = 10,
     searchTerm = '',
     sort = '',
     filters: Record<string, any> = {},
   ) {
-    const skip = (page - 1) * limit;
-
-    const order = buildSortOptions(sort);
-
-    const where = buildDynamicFilters(filters);
-
-    const findOptions: FindManyOptions<any> = {
-      take: limit,
-      skip: skip,
-      order,
-    };
-
-    if (searchTerm) {
-      // Add search condition. Using `Like` for partial matching in PostgreSQL.
-      findOptions.where = [{ ...where, name: Like(`%${searchTerm}%`) }];
-    } else if (Object.keys(where).length > 0) {
-      findOptions.where = where;
-    }
+    const findOptions = buildQueryOptions<Employee>(
+      page,
+      limit,
+      searchTerm,
+      sort,
+      filters,
+    );
+    this.logger.log('Doing something with timestamp here ->', findOptions);
     const [data, total] =
       await this.employeeRepository.findAndCount(findOptions);
     return {
