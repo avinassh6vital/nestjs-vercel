@@ -10,6 +10,7 @@ import { User } from './users/entities/user.entity';
 import { Employee } from './employee/entities/employee.entity';
 import { AuthModule } from './auth/auth.module';
 import { UsersDataModule } from './users-data/users-data.module';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [
@@ -20,10 +21,20 @@ import { UsersDataModule } from './users-data/users-data.module';
     //   autoLoadModels: true,
     //   synchronize: true,
     // }),
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
     TypeOrmModule.forRoot({
-      ...databaseConfig,
+      //...databaseConfig,
+      type: 'postgres',
+      //url: process.env.DATABASE_URL,
+      url: 'postgresql://postgres:Avinassh6@supabase@db.dvjqrkbqvbmsglwtktvc.supabase.co:5432/postgres',
+      //url: 'postgresql://postgres.dvjqrkbqvbmsglwtktvc:Avinassh6@supabase@aws-1-ap-northeast-1.pooler.supabase.com:5432/postgres',
+      //process.env.DATABASE_URL,
+      autoLoadEntities: true,
+      synchronize: true,
       entities: [User, Employee],
-     // entities: [__dirname + '/entity/*{.js,.ts}'],
+      // entities: [__dirname + '/entity/*{.js,.ts}'],
     }),
     UsersModule,
     EmployeeModule,
