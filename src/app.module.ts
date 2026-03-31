@@ -3,13 +3,14 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UsersModule } from './users/users.module';
 //import { SequelizeModule } from '@nestjs/sequelize';
-import { databaseConfig } from './database/config';
+//import { databaseConfig } from './database/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { EmployeeModule } from './employee/employee.module';
 import { User } from './users/entities/user.entity';
 import { Employee } from './employee/entities/employee.entity';
 import { AuthModule } from './auth/auth.module';
 import { UsersDataModule } from './users-data/users-data.module';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [
@@ -20,8 +21,11 @@ import { UsersDataModule } from './users-data/users-data.module';
     //   autoLoadModels: true,
     //   synchronize: true,
     // }),
+    ConfigModule.forRoot(),
     TypeOrmModule.forRoot({
-      ...databaseConfig,
+      //...databaseConfig,
+      type: 'postgres',
+      url: process.env.DATABASE_URL,
       entities: [User, Employee],
      // entities: [__dirname + '/entity/*{.js,.ts}'],
     }),
