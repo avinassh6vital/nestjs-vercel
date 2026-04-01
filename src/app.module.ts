@@ -11,6 +11,8 @@ import { Employee } from './employee/entities/employee.entity';
 import { AuthModule } from './auth/auth.module';
 import { UsersDataModule } from './users-data/users-data.module';
 import { ConfigModule } from '@nestjs/config';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
 
 @Module({
   imports: [
@@ -21,13 +23,16 @@ import { ConfigModule } from '@nestjs/config';
     //   autoLoadModels: true,
     //   synchronize: true,
     // }),
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', 'public'),
+    }),
     ConfigModule.forRoot(),
     TypeOrmModule.forRoot({
       //...databaseConfig,
       type: 'postgres',
       url: process.env.DATABASE_URL,
       entities: [User, Employee],
-     // entities: [__dirname + '/entity/*{.js,.ts}'],
+      // entities: [__dirname + '/entity/*{.js,.ts}'],
     }),
     UsersModule,
     EmployeeModule,
