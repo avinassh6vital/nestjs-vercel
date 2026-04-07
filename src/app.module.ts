@@ -3,7 +3,6 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UsersModule } from './users/users.module';
 //import { SequelizeModule } from '@nestjs/sequelize';
-//import { databaseConfig } from './database/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { EmployeeModule } from './employee/employee.module';
 import { User } from './users/entities/user.entity';
@@ -13,6 +12,7 @@ import { UsersDataModule } from './users-data/users-data.module';
 import { ConfigModule } from '@nestjs/config';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
+import { databaseConfig } from './database/config';
 
 @Module({
   imports: [
@@ -31,8 +31,12 @@ import { join } from 'path';
       //...databaseConfig,
       type: 'postgres',
       url: process.env.DATABASE_URL,
+      ssl: {
+        rejectUnauthorized: false, // for render
+      },
+      synchronize: true,
       entities: [User, Employee],
-      // entities: [__dirname + '/entity/*{.js,.ts}'],
+      //entities: [__dirname + '/entity/*{.js,.ts}'],
     }),
     UsersModule,
     EmployeeModule,
