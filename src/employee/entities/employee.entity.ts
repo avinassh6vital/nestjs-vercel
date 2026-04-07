@@ -11,22 +11,22 @@ export class Employee {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   name: string;
 
-  @Column()
+  @Column({ type: 'int' })
   age: number;
 
-  @Column()
+  @Column({ type: 'varchar' })
   gender: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   designation: string;
 
-  @Column()
+  @Column({ type: 'varchar' })
   department: string;
 
-  @Column()
+  @Column({ type: 'int' })
   salary: number;
 
   @CreateDateColumn({ name: 'created_at' })

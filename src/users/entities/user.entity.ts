@@ -36,13 +36,13 @@ export class User {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ nullable: true })
+  @Column({ nullable: true, type: 'varchar' })
   email: string;
 
-  @Column({ nullable: true })
+  @Column({ nullable: true, type: 'int' })
   age: number;
 
-  @Column({ nullable: true })
+  @Column({ nullable: true, type: 'varchar' })
   name: string;
 
   // This column will be automatically set on creation
