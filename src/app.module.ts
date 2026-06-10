@@ -21,6 +21,8 @@ import { MeterReadingModule } from './meter_reading/meter_reading.module';
 import { MeterReading } from './meter_reading/entities/meter_reading.entity';
 import { MembersModule } from './members/members.module';
 import { Member } from './members/entities/member.entity';
+import { IndividualExpenseModule } from './individual-expense/individual-expense.module';
+import { IndividualExpense } from './individual-expense/entities/individual-expense.entity';
 
 @Module({
   imports: [
@@ -43,7 +45,7 @@ import { Member } from './members/entities/member.entity';
       //   rejectUnauthorized: false, // for render
       // },
       synchronize: true,
-      entities: [User, Employee, Expense, CollectionAmount, MeterReading, Member],
+      entities: [User, Employee, Expense, CollectionAmount, MeterReading, Member, IndividualExpense],
       //entities: [__dirname + '/entity/*{.js,.ts}'],
     }),
     UsersModule,
@@ -54,6 +56,7 @@ import { Member } from './members/entities/member.entity';
     CollectionAmountModule,
     MeterReadingModule,
     MembersModule,
+    IndividualExpenseModule,
   ],
   controllers: [AppController],
   providers: [AppService],
