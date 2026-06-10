@@ -28,12 +28,12 @@ import { databaseConfig } from './database/config';
     }),
     ConfigModule.forRoot(),
     TypeOrmModule.forRoot({
-      //...databaseConfig,
-      type: 'postgres',
-      url: process.env.DATABASE_URL,
-      ssl: {
-        rejectUnauthorized: false, // for render
-      },
+      ...databaseConfig,
+      //type: 'postgres',
+      //url: process.env.DATABASE_URL,
+      // ssl: {
+      //   rejectUnauthorized: false, // for render
+      // },
       synchronize: true,
       entities: [User, Employee],
       //entities: [__dirname + '/entity/*{.js,.ts}'],
