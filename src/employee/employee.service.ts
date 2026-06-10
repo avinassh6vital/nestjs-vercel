@@ -98,6 +98,7 @@ export class EmployeeService {
     filters: Record<string, any> = {},
   ) {
     const findOptions = buildQueryOptions<Employee>(
+      this.employeeRepository,
       page,
       limit,
       searchTerm,

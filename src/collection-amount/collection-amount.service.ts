@@ -40,6 +40,7 @@ export class CollectionAmountService {
   ) {
     const searchFields = ['paymentMethod', 'description'];
     const queryOptions = buildQueryOptions<CollectionAmount>(
+      this.collectionAmountRepository,
       page,
       limit,
       searchTerm,

@@ -43,6 +43,7 @@ export class MeterReadingService {
   ) {
     const searchFields = ['notes'];
     const queryOptions = buildQueryOptions<MeterReading>(
+      this.meterReadingRepository,
       page,
       limit,
       searchTerm,

@@ -37,6 +37,7 @@ export class MembersService {
     filters: Record<string, any> = {},
   ) {
     const findOptions = buildQueryOptions<Member>(
+      this.memberRepository,
       page,
       limit,
       searchTerm,
