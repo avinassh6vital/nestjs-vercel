@@ -10,6 +10,7 @@ import {
 export enum ExpenseType {
   WATER = 'water',
   ELECTRICITY_MAINTENANCE = 'electricity maintenance',
+  ELECTRICITY_BILL = 'electricity bill',
   WATCHMEN_SALARY = 'watchmen salary',
   LIFT_MAINTENANCE_AND_PARTS = 'lift maintenance and parts',
   MOTOR_MAINTENANCE = 'motor maintenance',
@@ -24,8 +25,8 @@ export enum WaterSource {
 
 @Entity('expenses')
 export class Expense {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
   @Column({
     type: 'enum',

@@ -4,6 +4,7 @@ import { UpdateCollectionAmountDto } from './dto/update-collection-amount.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CollectionAmount } from './entities/collection-amount.entity';
 import { Repository } from 'typeorm';
+import { buildQueryOptions } from '../utils/filter.util';
 
 @Injectable()
 export class CollectionAmountService {
@@ -13,32 +14,69 @@ export class CollectionAmountService {
       private collectionAmountRepository: Repository<CollectionAmount>,
     ) {}
   
-  create(createCollectionAmountDto: CreateCollectionAmountDto) {
+  async create(createCollectionAmountDto: CreateCollectionAmountDto) {
     const collectionAmount = this.collectionAmountRepository.create(
       createCollectionAmountDto,
     );
-    return this.collectionAmountRepository.save(collectionAmount);
+    const saved = await this.collectionAmountRepository.save(collectionAmount);
+    saved.amount = Number(saved.amount);
+    return saved;
   }
 
-  // findAll() {
-  //   return `This action returns all collectionAmount`;
-  // }
+  async findAll(
+    page = 1,
+    limit = 10,
+    searchTerm = '',
+    sort = '',
+    filters: Record<string, any> = {},
+  ) {
+    const searchFields = ['paymentMethod', 'description'];
+    const queryOptions = buildQueryOptions<CollectionAmount>(
+      page,
+      limit,
+      searchTerm,
+      sort,
+      filters,
+      searchFields,
+    );
 
-  async findAll() {
-    const collectionAmounts = await this.collectionAmountRepository.find();
-    const totalAmount = collectionAmounts.reduce((sum, item) => sum + item.amount, 0);
-    return { collectionAmounts, totalAmount };
+    const [collectionAmounts, total] = await this.collectionAmountRepository.findAndCount(queryOptions);
+    
+    const mappedCollectionAmounts = collectionAmounts.map(item => ({
+      ...item,
+      amount: Number(item.amount),
+    }));
+
+    const totalAmount = mappedCollectionAmounts.reduce((sum, item) => sum + item.amount, 0);
+
+    return {
+      collectionAmounts: mappedCollectionAmounts,
+      total,
+      page,
+      limit,
+      totalAmount,
+    };
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} collectionAmount`;
+  async findOne(id: string) {
+    const collectionAmount = await this.collectionAmountRepository.findOneBy({ id });
+    if (collectionAmount) {
+      collectionAmount.amount = Number(collectionAmount.amount);
+    }
+    return collectionAmount;
   }
 
-  update(id: number, updateCollectionAmountDto: UpdateCollectionAmountDto) {
-    return `This action updates a #${id} collectionAmount`;
+  async update(id: string, updateCollectionAmountDto: UpdateCollectionAmountDto) {
+    await this.collectionAmountRepository.update(id, updateCollectionAmountDto);
+    return this.findOne(id);
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} collectionAmount`;
+  async remove(id: string) {
+    const collectionAmount = await this.findOne(id);
+    if (collectionAmount) {
+      await this.collectionAmountRepository.remove(collectionAmount);
+    }
+    return { deleted: true };
   }
 }
+

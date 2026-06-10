@@ -4,6 +4,7 @@ import { UpdateMeterReadingDto } from './dto/update-meter_reading.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { MeterReading } from './entities/meter_reading.entity';
+import { buildQueryOptions } from '../utils/filter.util';
 
 @Injectable()
 export class MeterReadingService {
@@ -13,36 +14,78 @@ export class MeterReadingService {
     private meterReadingRepository: Repository<MeterReading>,
   ) {}
 
-  // create(createMeterReadingDto: CreateMeterReadingDto) {
-  //   return 'This action adds a new meterReading';
-  // }
-
-  create(createMeterReadingDto: CreateMeterReadingDto) {
+  async create(createMeterReadingDto: CreateMeterReadingDto) {
     const meterReading = this.meterReadingRepository.create(
       createMeterReadingDto,
     );
-    return this.meterReadingRepository.save(meterReading);
+    const saved = await this.meterReadingRepository.save(meterReading);
+    saved.currentReading = Number(saved.currentReading);
+    if (saved.previousReading !== undefined && saved.previousReading !== null) {
+      saved.previousReading = Number(saved.previousReading);
+    }
+    return saved;
   }
 
-  // findAll() {
-  //   return `This action returns all meterReading`;
-  // }
+  async findAll(
+    page = 1,
+    limit = 10,
+    searchTerm = '',
+    sort = '',
+    filters: Record<string, any> = {},
+  ) {
+    const searchFields = ['notes'];
+    const queryOptions = buildQueryOptions<MeterReading>(
+      page,
+      limit,
+      searchTerm,
+      sort,
+      filters,
+      searchFields,
+    );
 
-  async findAll() {
-    const meterReadings = await this.meterReadingRepository.find();
-    const totalAmount = meterReadings.reduce((sum, item) => sum + item.currentReading, 0);
-    return { meterReadings, totalAmount };
+    const [meterReadings, total] = await this.meterReadingRepository.findAndCount(queryOptions);
+    
+    const mappedMeterReadings = meterReadings.map(item => ({
+      ...item,
+      currentReading: Number(item.currentReading),
+      previousReading: item.previousReading !== null && item.previousReading !== undefined 
+        ? Number(item.previousReading) 
+        : undefined,
+    }));
+
+    const totalAmount = mappedMeterReadings.reduce((sum, item) => sum + item.currentReading, 0);
+
+    return {
+      meterReadings: mappedMeterReadings,
+      total,
+      page,
+      limit,
+      totalAmount,
+    };
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} meterReading`;
+  async findOne(id: string) {
+    const meterReading = await this.meterReadingRepository.findOneBy({ id });
+    if (meterReading) {
+      meterReading.currentReading = Number(meterReading.currentReading);
+      if (meterReading.previousReading !== null && meterReading.previousReading !== undefined) {
+        meterReading.previousReading = Number(meterReading.previousReading);
+      }
+    }
+    return meterReading;
   }
 
-  update(id: number, updateMeterReadingDto: UpdateMeterReadingDto) {
-    return `This action updates a #${id} meterReading`;
+  async update(id: string, updateMeterReadingDto: UpdateMeterReadingDto) {
+    await this.meterReadingRepository.update(id, updateMeterReadingDto);
+    return this.findOne(id);
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} meterReading`;
+  async remove(id: string) {
+    const meterReading = await this.findOne(id);
+    if (meterReading) {
+      await this.meterReadingRepository.remove(meterReading);
+    }
+    return { deleted: true };
   }
 }
+
