@@ -18,6 +18,7 @@ describe('MeterReadingService', () => {
 
   const mockMembersService = {
     findOne: jest.fn(),
+    findByFlatNo: jest.fn(),
   };
 
   beforeEach(async () => {

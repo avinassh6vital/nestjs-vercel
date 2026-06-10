@@ -37,6 +37,7 @@ export class MembersService {
     filters: Record<string, any> = {},
   ) {
     const findOptions = buildQueryOptions<Member>(
+      this.memberRepository,
       page,
       limit,
       searchTerm,
@@ -58,6 +59,12 @@ export class MembersService {
     return this.memberRepository.findOne({
       where: { id },
       relations: ['meterReadings', 'collectionAmounts'],
+    });
+  }
+
+  findByFlatNo(flatNo: number) {
+    return this.memberRepository.findOne({
+      where: { flatNo, active: true },
     });
   }
 

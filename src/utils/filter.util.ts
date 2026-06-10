@@ -10,12 +10,55 @@ import {
   Equal,
   FindOptionsWhere,
   FindManyOptions,
+  Repository,
+  ObjectLiteral,
 } from 'typeorm';
 
-export function buildDynamicFilters<T>(filters: Record<string, any>): FindOptionsWhere<T> {
+export function buildDynamicFilters<T>(filters: Record<string, any>, dateField?: string): FindOptionsWhere<T> {
   const where: any = {};
 
-  if (!filters || Object.keys(filters).length === 0) {
+  if (!filters) {
+    return where;
+  }
+
+  // Handle fromDate and toDate range checks if dateField is provided
+  if (dateField) {
+    const fromDate = filters.fromDate;
+    const toDate = filters.toDate;
+    delete filters.fromDate;
+    delete filters.toDate;
+
+    if (fromDate || toDate) {
+      const isStringDateField = dateField === 'readingDate';
+
+      if (fromDate && toDate) {
+        if (isStringDateField) {
+          where[dateField] = Between(fromDate, toDate);
+        } else {
+          const start = new Date(fromDate);
+          const end = new Date(toDate);
+          end.setHours(23, 59, 59, 999);
+          where[dateField] = Between(start, end);
+        }
+      } else if (fromDate) {
+        if (isStringDateField) {
+          where[dateField] = MoreThanOrEqual(fromDate);
+        } else {
+          where[dateField] = MoreThanOrEqual(new Date(fromDate));
+        }
+      } else if (toDate) {
+        if (isStringDateField) {
+          where[dateField] = LessThanOrEqual(toDate);
+        } else {
+          const end = new Date(toDate);
+          end.setHours(23, 59, 59, 999);
+          where[dateField] = LessThanOrEqual(end);
+        }
+      }
+    }
+  }
+
+  if (Object.keys(filters).length === 0) {
     return where;
   }
 
@@ -124,7 +167,8 @@ export function buildSortOptions(sort?: string) {
   return order;
 }
 
-export function buildQueryOptions<T>(
+export function buildQueryOptions<T extends ObjectLiteral>(
+  repository: Repository<T>,
   page = 1,
   limit = 10,
   searchTerm = '',
@@ -136,7 +180,14 @@ export function buildQueryOptions<T>(
 
   const order = buildSortOptions(sort);
 
-  const where = buildDynamicFilters<T>(filters);
+  // Find date field dynamically from repository metadata columns
+  const dateField = repository?.metadata?.columns?.find((c) =>
+    c.propertyName === 'date' ||
+    c.propertyName === 'readingDate' ||
+    c.propertyName === 'createdAt'
+  )?.propertyName;
+
+  const where = buildDynamicFilters<T>(filters, dateField);
 
   const findOptions: FindManyOptions<any> = {
     take: limit,

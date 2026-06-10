@@ -14,7 +14,7 @@ export class MeterReading {
   currentReading: number;
 
   @Column('decimal', { precision: 10, scale: 2, nullable: true })
-  previousReading?: number;
+  previousReading: number;
 
   @Column()
   readingDate: string; // YYYY-MM-DD

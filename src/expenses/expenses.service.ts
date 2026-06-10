@@ -33,6 +33,7 @@ export class ExpensesService {
   ) {
     const searchFields = ['description', 'category', 'comments'];
     const queryOptions = buildQueryOptions<Expense>(
+      this.expensesRepository,
       page,
       limit,
       searchTerm,

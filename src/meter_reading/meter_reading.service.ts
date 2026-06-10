@@ -17,15 +17,16 @@ export class MeterReadingService {
   ) {}
 
   async create(createMeterReadingDto: CreateMeterReadingDto) {
-    if (createMeterReadingDto.memberId) {
-      const member = await this.membersService.findOne(createMeterReadingDto.memberId);
-      if (!member) {
-        throw new NotFoundException(`Member with ID ${createMeterReadingDto.memberId} not found`);
-      }
+    const member = await this.membersService.findByFlatNo(createMeterReadingDto.flatNo);
+    if (!member) {
+      throw new NotFoundException(
+        `Active member with flat number ${createMeterReadingDto.flatNo} not found`,
+      );
     }
-    const meterReading = this.meterReadingRepository.create(
-      createMeterReadingDto,
-    );
+    const meterReading = this.meterReadingRepository.create({
+      ...createMeterReadingDto,
+      memberId: member.id,
+    });
     const saved = await this.meterReadingRepository.save(meterReading);
     saved.currentReading = Number(saved.currentReading);
     if (saved.previousReading !== undefined && saved.previousReading !== null) {
@@ -43,6 +44,7 @@ export class MeterReadingService {
   ) {
     const searchFields = ['notes'];
     const queryOptions = buildQueryOptions<MeterReading>(
+      this.meterReadingRepository,
       page,
       limit,
       searchTerm,
@@ -88,13 +90,17 @@ export class MeterReadingService {
   }
 
   async update(id: string, updateMeterReadingDto: UpdateMeterReadingDto) {
-    if (updateMeterReadingDto.memberId) {
-      const member = await this.membersService.findOne(updateMeterReadingDto.memberId);
+    const updateData: any = { ...updateMeterReadingDto };
+    if (updateMeterReadingDto.flatNo) {
+      const member = await this.membersService.findByFlatNo(updateMeterReadingDto.flatNo);
       if (!member) {
-        throw new NotFoundException(`Member with ID ${updateMeterReadingDto.memberId} not found`);
+        throw new NotFoundException(
+          `Active member with flat number ${updateMeterReadingDto.flatNo} not found`,
+        );
       }
+      updateData.memberId = member.id;
     }
-    await this.meterReadingRepository.update(id, updateMeterReadingDto);
+    await this.meterReadingRepository.update(id, updateData);
     return this.findOne(id);
   }
 

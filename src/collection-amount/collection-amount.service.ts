@@ -17,15 +17,16 @@ export class CollectionAmountService {
   ) {}
   
   async create(createCollectionAmountDto: CreateCollectionAmountDto) {
-    if (createCollectionAmountDto.memberId) {
-      const member = await this.membersService.findOne(createCollectionAmountDto.memberId);
-      if (!member) {
-        throw new NotFoundException(`Member with ID ${createCollectionAmountDto.memberId} not found`);
-      }
+    const member = await this.membersService.findByFlatNo(createCollectionAmountDto.flatNo);
+    if (!member) {
+      throw new NotFoundException(
+        `Active member with flat number ${createCollectionAmountDto.flatNo} not found`,
+      );
     }
-    const collectionAmount = this.collectionAmountRepository.create(
-      createCollectionAmountDto,
-    );
+    const collectionAmount = this.collectionAmountRepository.create({
+      ...createCollectionAmountDto,
+      memberId: member.id,
+    });
     const saved = await this.collectionAmountRepository.save(collectionAmount);
     saved.amount = Number(saved.amount);
     return saved;
@@ -40,6 +41,7 @@ export class CollectionAmountService {
   ) {
     const searchFields = ['paymentMethod', 'description'];
     const queryOptions = buildQueryOptions<CollectionAmount>(
+      this.collectionAmountRepository,
       page,
       limit,
       searchTerm,
@@ -79,13 +81,19 @@ export class CollectionAmountService {
   }
 
   async update(id: string, updateCollectionAmountDto: UpdateCollectionAmountDto) {
-    if (updateCollectionAmountDto.memberId) {
-      const member = await this.membersService.findOne(updateCollectionAmountDto.memberId);
+    const updateData: any = { ...updateCollectionAmountDto };
+    if (updateCollectionAmountDto.flatNo) {
+      const member = await this.membersService.findByFlatNo(
+        updateCollectionAmountDto.flatNo,
+      );
       if (!member) {
-        throw new NotFoundException(`Member with ID ${updateCollectionAmountDto.memberId} not found`);
+        throw new NotFoundException(
+          `Active member with flat number ${updateCollectionAmountDto.flatNo} not found`,
+        );
       }
+      updateData.memberId = member.id;
     }
-    await this.collectionAmountRepository.update(id, updateCollectionAmountDto);
+    await this.collectionAmountRepository.update(id, updateData);
     return this.findOne(id);
   }
 
@@ -97,5 +105,3 @@ export class CollectionAmountService {
     return { deleted: true };
   }
 }
-
-
