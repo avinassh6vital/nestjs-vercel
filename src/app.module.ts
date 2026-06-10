@@ -15,6 +15,8 @@ import { join } from 'path';
 import { databaseConfig } from './database/config';
 import { ExpensesModule } from './expenses/expenses.module';
 import { Expense } from './expenses/entities/expense.entity';
+import { CollectionAmountModule } from './collection-amount/collection-amount.module';
+import { CollectionAmount } from './collection-amount/entities/collection-amount.entity';
 
 @Module({
   imports: [
@@ -37,7 +39,7 @@ import { Expense } from './expenses/entities/expense.entity';
       //   rejectUnauthorized: false, // for render
       // },
       synchronize: true,
-      entities: [User, Employee, Expense],
+      entities: [User, Employee, Expense, CollectionAmount],
       //entities: [__dirname + '/entity/*{.js,.ts}'],
     }),
     UsersModule,
@@ -45,6 +47,7 @@ import { Expense } from './expenses/entities/expense.entity';
     AuthModule,
     UsersDataModule,
     ExpensesModule,
+    CollectionAmountModule,
   ],
   controllers: [AppController],
   providers: [AppService],

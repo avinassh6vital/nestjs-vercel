@@ -21,8 +21,14 @@ export class ExpensesService {
       return this.expensesRepository.save(expenses);
     }
 
-  findAll() {
-    return `This action returns all expenses`;
+  // findAll() {
+  //   return `This action returns all expenses`;
+  // }
+
+  async findAll() {
+    const expenses = await this.expensesRepository.find();
+    const totalAmount = expenses.reduce((sum, item) => sum + item.amount, 0);
+    return { expenses, totalAmount };
   }
 
   findOne(id: number) {
