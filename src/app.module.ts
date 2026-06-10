@@ -13,6 +13,8 @@ import { ConfigModule } from '@nestjs/config';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { databaseConfig } from './database/config';
+import { ExpensesModule } from './expenses/expenses.module';
+import { Expense } from './expenses/entities/expense.entity';
 
 @Module({
   imports: [
@@ -35,13 +37,14 @@ import { databaseConfig } from './database/config';
       //   rejectUnauthorized: false, // for render
       // },
       synchronize: true,
-      entities: [User, Employee],
+      entities: [User, Employee, Expense],
       //entities: [__dirname + '/entity/*{.js,.ts}'],
     }),
     UsersModule,
     EmployeeModule,
     AuthModule,
     UsersDataModule,
+    ExpensesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
