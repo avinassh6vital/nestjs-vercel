@@ -4,7 +4,10 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
+import { Member } from '../../members/entities/member.entity';
 
 @Entity('collection_amounts')
 export class CollectionAmount {
@@ -26,9 +29,17 @@ export class CollectionAmount {
   @Column('text', { nullable: true })
   description?: string;
 
+  @ManyToOne(() => Member, (member) => member.collectionAmounts, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'memberId' })
+  member?: Member;
+
+  @Column({ nullable: true })
+  memberId?: string;
+
   @CreateDateColumn()
   createdAt: Date;
 
   @UpdateDateColumn()
   updatedAt: Date;
 }
+

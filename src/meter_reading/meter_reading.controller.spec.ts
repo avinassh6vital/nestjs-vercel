@@ -5,10 +5,23 @@ import { MeterReadingService } from './meter_reading.service';
 describe('MeterReadingController', () => {
   let controller: MeterReadingController;
 
+  const mockMeterReadingService = {
+    create: jest.fn(),
+    findAll: jest.fn(),
+    findOne: jest.fn(),
+    update: jest.fn(),
+    remove: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [MeterReadingController],
-      providers: [MeterReadingService],
+      providers: [
+        {
+          provide: MeterReadingService,
+          useValue: mockMeterReadingService,
+        },
+      ],
     }).compile();
 
     controller = module.get<MeterReadingController>(MeterReadingController);
@@ -18,3 +31,4 @@ describe('MeterReadingController', () => {
     expect(controller).toBeDefined();
   });
 });
+

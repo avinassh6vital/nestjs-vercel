@@ -1,4 +1,4 @@
-import { IsNumber, IsDateString, IsOptional, IsString } from 'class-validator';
+import { IsNumber, IsDateString, IsOptional, IsString, IsUUID } from 'class-validator';
 
 export class CreateCollectionAmountDto {
   @IsNumber()
@@ -17,4 +17,9 @@ export class CreateCollectionAmountDto {
   @IsOptional()
   @IsString()
   description?: string;
+
+  @IsOptional()
+  @IsUUID()
+  memberId?: string;
 }
+

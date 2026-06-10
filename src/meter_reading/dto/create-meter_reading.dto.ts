@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsNumber, Min, IsOptional, IsDateString, MaxLength } from 'class-validator';
+import { IsNotEmpty, IsNumber, Min, IsOptional, IsDateString, MaxLength, IsUUID } from 'class-validator';
 
 export class CreateMeterReadingDto {
 
@@ -23,4 +23,9 @@ export class CreateMeterReadingDto {
   @IsOptional()
   @MaxLength(200)
   notes?: string;
+
+  @IsOptional()
+  @IsUUID()
+  memberId?: string;
 }
+

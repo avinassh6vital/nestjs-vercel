@@ -1,4 +1,5 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Member } from '../../members/entities/member.entity';
 
 @Entity('meterReadings')
 export class MeterReading {
@@ -21,9 +22,17 @@ export class MeterReading {
   @Column('text', { nullable: true })
   notes?: string;
 
+  @ManyToOne(() => Member, (member) => member.meterReadings, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'memberId' })
+  member?: Member;
+
+  @Column({ nullable: true })
+  memberId?: string;
+
   @CreateDateColumn()
   createdAt: Date;
 
   @UpdateDateColumn()
   updatedAt: Date;
 }
+

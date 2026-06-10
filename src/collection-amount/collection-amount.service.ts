@@ -1,20 +1,28 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateCollectionAmountDto } from './dto/create-collection-amount.dto';
 import { UpdateCollectionAmountDto } from './dto/update-collection-amount.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CollectionAmount } from './entities/collection-amount.entity';
 import { Repository } from 'typeorm';
 import { buildQueryOptions } from '../utils/filter.util';
+import { MembersService } from '../members/members.service';
 
 @Injectable()
 export class CollectionAmountService {
 
   constructor(
-      @InjectRepository(CollectionAmount)
-      private collectionAmountRepository: Repository<CollectionAmount>,
-    ) {}
+    @InjectRepository(CollectionAmount)
+    private collectionAmountRepository: Repository<CollectionAmount>,
+    private readonly membersService: MembersService,
+  ) {}
   
   async create(createCollectionAmountDto: CreateCollectionAmountDto) {
+    if (createCollectionAmountDto.memberId) {
+      const member = await this.membersService.findOne(createCollectionAmountDto.memberId);
+      if (!member) {
+        throw new NotFoundException(`Member with ID ${createCollectionAmountDto.memberId} not found`);
+      }
+    }
     const collectionAmount = this.collectionAmountRepository.create(
       createCollectionAmountDto,
     );
@@ -39,6 +47,7 @@ export class CollectionAmountService {
       filters,
       searchFields,
     );
+    queryOptions.relations = ['member'];
 
     const [collectionAmounts, total] = await this.collectionAmountRepository.findAndCount(queryOptions);
     
@@ -59,7 +68,10 @@ export class CollectionAmountService {
   }
 
   async findOne(id: string) {
-    const collectionAmount = await this.collectionAmountRepository.findOneBy({ id });
+    const collectionAmount = await this.collectionAmountRepository.findOne({
+      where: { id },
+      relations: ['member'],
+    });
     if (collectionAmount) {
       collectionAmount.amount = Number(collectionAmount.amount);
     }
@@ -67,6 +79,12 @@ export class CollectionAmountService {
   }
 
   async update(id: string, updateCollectionAmountDto: UpdateCollectionAmountDto) {
+    if (updateCollectionAmountDto.memberId) {
+      const member = await this.membersService.findOne(updateCollectionAmountDto.memberId);
+      if (!member) {
+        throw new NotFoundException(`Member with ID ${updateCollectionAmountDto.memberId} not found`);
+      }
+    }
     await this.collectionAmountRepository.update(id, updateCollectionAmountDto);
     return this.findOne(id);
   }
@@ -79,4 +97,5 @@ export class CollectionAmountService {
     return { deleted: true };
   }
 }
+
 

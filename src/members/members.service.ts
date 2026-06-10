@@ -33,6 +33,7 @@ export class MembersService {
       filters,
       ['firstName', 'lastName', 'phoneNumber'],
     );
+    findOptions.relations = ['meterReadings', 'collectionAmounts'];
     const [data, total] = await this.memberRepository.findAndCount(findOptions);
     return {
       data,
@@ -43,7 +44,10 @@ export class MembersService {
   }
 
   findOne(id: string) {
-    return this.memberRepository.findOne({ where: { id } });
+    return this.memberRepository.findOne({
+      where: { id },
+      relations: ['meterReadings', 'collectionAmounts'],
+    });
   }
 
   async update(id: string, updateMemberDto: UpdateMemberDto) {
