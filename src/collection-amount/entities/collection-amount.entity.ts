@@ -8,8 +8,8 @@ import {
 
 @Entity('collection_amounts')
 export class CollectionAmount {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
   @Column()
   flatNo: number;
