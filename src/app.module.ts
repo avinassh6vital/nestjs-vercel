@@ -17,6 +17,8 @@ import { ExpensesModule } from './expenses/expenses.module';
 import { Expense } from './expenses/entities/expense.entity';
 import { CollectionAmountModule } from './collection-amount/collection-amount.module';
 import { CollectionAmount } from './collection-amount/entities/collection-amount.entity';
+import { MeterReadingModule } from './meter_reading/meter_reading.module';
+import { MeterReading } from './meter_reading/entities/meter_reading.entity';
 
 @Module({
   imports: [
@@ -39,7 +41,7 @@ import { CollectionAmount } from './collection-amount/entities/collection-amount
       //   rejectUnauthorized: false, // for render
       // },
       synchronize: true,
-      entities: [User, Employee, Expense, CollectionAmount],
+      entities: [User, Employee, Expense, CollectionAmount, MeterReading],
       //entities: [__dirname + '/entity/*{.js,.ts}'],
     }),
     UsersModule,
@@ -48,6 +50,7 @@ import { CollectionAmount } from './collection-amount/entities/collection-amount
     UsersDataModule,
     ExpensesModule,
     CollectionAmountModule,
+    MeterReadingModule,
   ],
   controllers: [AppController],
   providers: [AppService],
