@@ -29,6 +29,11 @@ export class ExpensesController {
     return this.expensesService.findAll(pageNum, limitNum, search || '', sort || '', filters);
   }
 
+  @Get('overview')
+  getOverview(@Query('month') month?: string) {
+    return this.expensesService.getOverview(month);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.expensesService.findOne(id);
