@@ -36,6 +36,12 @@ export class CollectionAmount {
   @Column({ nullable: true })
   memberId?: string;
 
+  @Column({ nullable: true })
+  createdBy?: string;
+
+  @Column({ nullable: true })
+  updatedBy?: string;
+
   @CreateDateColumn()
   createdAt: Date;
 

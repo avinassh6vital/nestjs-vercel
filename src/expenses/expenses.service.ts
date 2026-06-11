@@ -17,8 +17,11 @@ export class ExpensesService {
       private meterReadingRepository: Repository<MeterReading>,
     ) {}
 
-   async create(createExpenseDto: CreateExpenseDto) {
-      const expenses = this.expensesRepository.create(createExpenseDto);
+   async create(createExpenseDto: CreateExpenseDto, createdBy?: string) {
+      const expenses = this.expensesRepository.create({
+        ...createExpenseDto,
+        createdBy,
+      });
       const saved = await this.expensesRepository.save(expenses);
       saved.amount = Number(saved.amount);
       return saved;
@@ -68,8 +71,11 @@ export class ExpensesService {
     return expense;
   }
 
-  async update(id: string, updateExpenseDto: UpdateExpenseDto) {
-    await this.expensesRepository.update(id, updateExpenseDto);
+  async update(id: string, updateExpenseDto: UpdateExpenseDto, updatedBy?: string) {
+    await this.expensesRepository.update(id, {
+      ...updateExpenseDto,
+      updatedBy,
+    });
     return this.findOne(id);
   }
 

@@ -20,7 +20,7 @@ export class IndividualExpenseService {
     private readonly expensesService: ExpensesService,
   ) {}
 
-  async create(dto: CreateIndividualExpenseDto) {
+  async create(dto: CreateIndividualExpenseDto, createdBy?: string) {
     // 1. Find active member for flatNo
     const member = await this.membersService.findByFlatNo(dto.flatNo);
     if (!member) {
@@ -69,6 +69,7 @@ export class IndividualExpenseService {
       totalExpense,
       date: new Date(dto.date),
       notes: dto.notes,
+      createdBy,
     });
 
     const saved = await this.individualExpenseRepository.save(expense);
@@ -130,13 +131,13 @@ export class IndividualExpenseService {
     return item;
   }
 
-  async update(id: string, dto: UpdateIndividualExpenseDto) {
+  async update(id: string, dto: UpdateIndividualExpenseDto, updatedBy?: string) {
     const current = await this.findOne(id);
     if (!current) {
       throw new NotFoundException(`Individual expense with ID ${id} not found`);
     }
 
-    const updateData: any = { ...dto };
+    const updateData: any = { ...dto, updatedBy };
 
     const targetFlatNo = dto.flatNo !== undefined ? dto.flatNo : current.flatNo;
     const targetDate = dto.date !== undefined ? dto.date : current.date.toISOString().substring(0, 10);

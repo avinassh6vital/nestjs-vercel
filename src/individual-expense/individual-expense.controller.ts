@@ -10,19 +10,24 @@ import {
   ParseUUIDPipe,
   HttpStatus,
   HttpException,
+  UseGuards,
+  Request,
 } from '@nestjs/common';
 import { IndividualExpenseService } from './individual-expense.service';
 import { CreateIndividualExpenseDto } from './dto/create-individual-expense.dto';
 import { UpdateIndividualExpenseDto } from './dto/update-individual-expense.dto';
+import { AuthGuard } from 'src/auth/auth.guard';
 
 @Controller('individual-expense')
 export class IndividualExpenseController {
   constructor(private readonly service: IndividualExpenseService) {}
 
+  @UseGuards(AuthGuard)
   @Post()
-  async create(@Body() createDto: CreateIndividualExpenseDto) {
+  async create(@Body() createDto: CreateIndividualExpenseDto, @Request() req: any) {
     try {
-      const data = await this.service.create(createDto);
+      const userId = req.user?.sub;
+      const data = await this.service.create(createDto, userId);
       return {
         message: 'Added successfully',
         data,
@@ -86,6 +91,7 @@ export class IndividualExpenseController {
     }
   }
 
+  @UseGuards(AuthGuard)
   @Patch(':uuid')
   async update(
     @Param(
@@ -94,9 +100,11 @@ export class IndividualExpenseController {
     )
     uuid: string,
     @Body() updateDto: UpdateIndividualExpenseDto,
+    @Request() req: any,
   ) {
     try {
-      const data = await this.service.update(uuid, updateDto);
+      const userId = req.user?.sub;
+      const data = await this.service.update(uuid, updateDto, userId);
       return {
         message: 'updated successfully',
         id: uuid,

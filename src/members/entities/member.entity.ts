@@ -38,6 +38,12 @@ export class Member {
   @OneToMany(() => CollectionAmount, (collectionAmount) => collectionAmount.member)
   collectionAmounts: CollectionAmount[];
 
+  @Column({ nullable: true })
+  createdBy?: string;
+
+  @Column({ nullable: true })
+  updatedBy?: string;
+
   @CreateDateColumn()
   createdAt: Date;
 

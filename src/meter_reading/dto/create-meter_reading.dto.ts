@@ -26,5 +26,13 @@ export class CreateMeterReadingDto {
   @IsOptional()
   @IsUUID()
   memberId?: string;
+
+  @IsOptional()
+  @IsString()
+  createdBy?: string;
+
+  @IsOptional()
+  @IsString()
+  updatedBy?: string;
 }
 

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards, Request } from '@nestjs/common';
 import { ExpensesService } from './expenses.service';
 import { CreateExpenseDto } from './dto/create-expense.dto';
 import { UpdateExpenseDto } from './dto/update-expense.dto';
@@ -8,10 +8,11 @@ import { AuthGuard } from 'src/auth/auth.guard';
 export class ExpensesController {
   constructor(private readonly expensesService: ExpensesService) {}
 
-  //@UseGuards(AuthGuard)
+  @UseGuards(AuthGuard)
   @Post()
-  create(@Body() createExpenseDto: CreateExpenseDto) {
-    return this.expensesService.create(createExpenseDto);
+  create(@Body() createExpenseDto: CreateExpenseDto, @Request() req: any) {
+    const userId = req.user?.sub;
+    return this.expensesService.create(createExpenseDto, userId);
   }
 
   //@UseGuards(AuthGuard)
@@ -31,7 +32,7 @@ export class ExpensesController {
 
     return this.expensesService.findAll(pageNum, limitNum, search || '', sort || '', filters);
   }
-  //@UseGuards(AuthGuard)
+  @UseGuards(AuthGuard)
   @Get('overview')
   getOverview(@Query('month') month?: string) {
     return this.expensesService.getOverview(month);
@@ -42,9 +43,11 @@ export class ExpensesController {
     return this.expensesService.findOne(id);
   }
 
+  @UseGuards(AuthGuard)
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateExpenseDto: UpdateExpenseDto) {
-    return this.expensesService.update(id, updateExpenseDto);
+  update(@Param('id') id: string, @Body() updateExpenseDto: UpdateExpenseDto, @Request() req: any) {
+    const userId = req.user?.sub;
+    return this.expensesService.update(id, updateExpenseDto, userId);
   }
 
   @Delete(':id')

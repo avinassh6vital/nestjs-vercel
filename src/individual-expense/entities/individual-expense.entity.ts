@@ -47,6 +47,12 @@ export class IndividualExpense {
   @Column('text', { nullable: true })
   notes?: string;
 
+  @Column({ nullable: true })
+  createdBy?: string;
+
+  @Column({ nullable: true })
+  updatedBy?: string;
+
   @CreateDateColumn()
   createdAt: Date;
 

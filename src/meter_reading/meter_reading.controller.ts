@@ -10,19 +10,24 @@ import {
   ParseUUIDPipe,
   HttpStatus,
   HttpException,
+  UseGuards,
+  Request,
 } from '@nestjs/common';
 import { MeterReadingService } from './meter_reading.service';
 import { CreateMeterReadingDto } from './dto/create-meter_reading.dto';
 import { UpdateMeterReadingDto } from './dto/update-meter_reading.dto';
+import { AuthGuard } from 'src/auth/auth.guard';
 
 @Controller('meter-reading')
 export class MeterReadingController {
   constructor(private readonly meterReadingService: MeterReadingService) {}
 
+  @UseGuards(AuthGuard)
   @Post()
-  async create(@Body() createMeterReadingDto: CreateMeterReadingDto) {
+  async create(@Body() createMeterReadingDto: CreateMeterReadingDto, @Request() req: any) {
     try {
-      const data = await this.meterReadingService.create(createMeterReadingDto);
+      const userId = req.user?.sub;
+      const data = await this.meterReadingService.create(createMeterReadingDto, userId);
       return {
         message: 'Added successfully',
         data,
@@ -99,6 +104,7 @@ export class MeterReadingController {
     }
   }
 
+  @UseGuards(AuthGuard)
   @Patch(':uuid')
   async update(
     @Param(
@@ -107,11 +113,14 @@ export class MeterReadingController {
     )
     uuid: string,
     @Body() updateMeterReadingDto: UpdateMeterReadingDto,
+    @Request() req: any,
   ) {
     try {
+      const userId = req.user?.sub;
       const data = await this.meterReadingService.update(
         uuid,
         updateMeterReadingDto,
+        userId,
       );
       return {
         message: 'updated successfully',

@@ -10,19 +10,24 @@ import {
   ParseUUIDPipe,
   HttpStatus,
   HttpException,
+  UseGuards,
+  Request,
 } from '@nestjs/common';
 import { CollectionAmountService } from './collection-amount.service';
 import { CreateCollectionAmountDto } from './dto/create-collection-amount.dto';
 import { UpdateCollectionAmountDto } from './dto/update-collection-amount.dto';
+import { AuthGuard } from 'src/auth/auth.guard';
 
 @Controller('collection-amount')
 export class CollectionAmountController {
   constructor(private readonly collectionAmountService: CollectionAmountService) {}
 
+  @UseGuards(AuthGuard)
   @Post()
-  async create(@Body() createCollectionAmountDto: CreateCollectionAmountDto) {
+  async create(@Body() createCollectionAmountDto: CreateCollectionAmountDto, @Request() req: any) {
     try {
-      const data = await this.collectionAmountService.create(createCollectionAmountDto);
+      const userId = req.user?.sub;
+      const data = await this.collectionAmountService.create(createCollectionAmountDto, userId);
       return {
         message: 'Added successfully',
         data,
@@ -87,6 +92,7 @@ export class CollectionAmountController {
     }
   }
 
+  @UseGuards(AuthGuard)
   @Patch(':uuid')
   async update(
     @Param(
@@ -95,9 +101,11 @@ export class CollectionAmountController {
     )
     uuid: string,
     @Body() updateCollectionAmountDto: UpdateCollectionAmountDto,
+    @Request() req: any,
   ) {
     try {
-      const data = await this.collectionAmountService.update(uuid, updateCollectionAmountDto);
+      const userId = req.user?.sub;
+      const data = await this.collectionAmountService.update(uuid, updateCollectionAmountDto, userId);
       return {
         message: 'updated successfully',
         id: uuid,

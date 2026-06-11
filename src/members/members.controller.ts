@@ -10,19 +10,24 @@ import {
   HttpStatus,
   HttpException,
   Query,
+  UseGuards,
+  Request,
 } from '@nestjs/common';
 import { MembersService } from './members.service';
 import { CreateMemberDto } from './dto/create-member.dto';
 import { UpdateMemberDto } from './dto/update-member.dto';
+import { AuthGuard } from 'src/auth/auth.guard';
 
 @Controller('members')
 export class MembersController {
   constructor(private readonly membersService: MembersService) {}
 
+  @UseGuards(AuthGuard)
   @Post()
-  async create(@Body() createMemberDto: CreateMemberDto) {
+  async create(@Body() createMemberDto: CreateMemberDto, @Request() req: any) {
     try {
-      const data = await this.membersService.create(createMemberDto);
+      const userId = req.user?.sub;
+      const data = await this.membersService.create(createMemberDto, userId);
       return {
         message: 'Added successfully',
         data,
@@ -93,6 +98,7 @@ export class MembersController {
     }
   }
 
+  @UseGuards(AuthGuard)
   @Patch(':uuid')
   async update(
     @Param(
@@ -101,9 +107,11 @@ export class MembersController {
     )
     uuid: string,
     @Body() updateMemberDto: UpdateMemberDto,
+    @Request() req: any,
   ) {
     try {
-      const data = await this.membersService.update(uuid, updateMemberDto);
+      const userId = req.user?.sub;
+      const data = await this.membersService.update(uuid, updateMemberDto, userId);
       return {
         message: 'updated successfully',
         id: uuid,

@@ -16,7 +16,7 @@ export class CollectionAmountService {
     private readonly membersService: MembersService,
   ) {}
   
-  async create(createCollectionAmountDto: CreateCollectionAmountDto) {
+  async create(createCollectionAmountDto: CreateCollectionAmountDto, createdBy?: string) {
     const member = await this.membersService.findByFlatNo(createCollectionAmountDto.flatNo);
     if (!member) {
       throw new NotFoundException(
@@ -26,6 +26,7 @@ export class CollectionAmountService {
     const collectionAmount = this.collectionAmountRepository.create({
       ...createCollectionAmountDto,
       memberId: member.id,
+      createdBy,
     });
     const saved = await this.collectionAmountRepository.save(collectionAmount);
     saved.amount = Number(saved.amount);
@@ -80,8 +81,8 @@ export class CollectionAmountService {
     return collectionAmount;
   }
 
-  async update(id: string, updateCollectionAmountDto: UpdateCollectionAmountDto) {
-    const updateData: any = { ...updateCollectionAmountDto };
+  async update(id: string, updateCollectionAmountDto: UpdateCollectionAmountDto, updatedBy?: string) {
+    const updateData: any = { ...updateCollectionAmountDto, updatedBy };
     if (updateCollectionAmountDto.flatNo) {
       const member = await this.membersService.findByFlatNo(
         updateCollectionAmountDto.flatNo,

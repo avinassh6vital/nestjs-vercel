@@ -3,7 +3,7 @@ import { CreateMemberDto } from './dto/create-member.dto';
 import { UpdateMemberDto } from './dto/update-member.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Member } from './entities/member.entity';
-import { Repository } from 'typeorm';
+import { Repository, ILike } from 'typeorm';
 import { buildQueryOptions } from '../utils/filter.util';
 
 @Injectable()
@@ -13,7 +13,7 @@ export class MembersService {
     private readonly memberRepository: Repository<Member>,
   ) {}
 
-  async create(createMemberDto: CreateMemberDto) {
+  async create(createMemberDto: CreateMemberDto, createdBy?: string) {
     if (createMemberDto.active !== false) {
       // active is true or undefined (which defaults to true)
       const existingActiveMember = await this.memberRepository.findOne({
@@ -25,7 +25,10 @@ export class MembersService {
         );
       }
     }
-    const member = this.memberRepository.create(createMemberDto);
+    const member = this.memberRepository.create({
+      ...createMemberDto,
+      createdBy,
+    });
     return this.memberRepository.save(member);
   }
 
@@ -68,7 +71,13 @@ export class MembersService {
     });
   }
 
-  async update(id: string, updateMemberDto: UpdateMemberDto) {
+  findByFirstName(firstName: string) {
+    return this.memberRepository.findOne({
+      where: { firstName: ILike(firstName), active: true },
+    });
+  }
+
+  async update(id: string, updateMemberDto: UpdateMemberDto, updatedBy?: string) {
     const currentMember = await this.findOne(id);
     if (!currentMember) {
       throw new NotFoundException(`Member with ID ${id} not found`);
@@ -94,7 +103,10 @@ export class MembersService {
       }
     }
 
-    await this.memberRepository.update(id, updateMemberDto);
+    await this.memberRepository.update(id, {
+      ...updateMemberDto,
+      updatedBy,
+    });
     return this.findOne(id);
   }
 

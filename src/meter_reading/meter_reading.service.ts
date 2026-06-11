@@ -16,7 +16,7 @@ export class MeterReadingService {
     private readonly membersService: MembersService,
   ) {}
 
-  async create(createMeterReadingDto: CreateMeterReadingDto) {
+  async create(createMeterReadingDto: CreateMeterReadingDto, createdBy?: string) {
     const member = await this.membersService.findByFlatNo(createMeterReadingDto.flatNo);
     if (!member) {
       throw new NotFoundException(
@@ -26,6 +26,7 @@ export class MeterReadingService {
     const meterReading = this.meterReadingRepository.create({
       ...createMeterReadingDto,
       memberId: member.id,
+      createdBy,
     });
     const saved = await this.meterReadingRepository.save(meterReading);
     saved.currentReading = Number(saved.currentReading);
@@ -89,8 +90,8 @@ export class MeterReadingService {
     return meterReading;
   }
 
-  async update(id: string, updateMeterReadingDto: UpdateMeterReadingDto) {
-    const updateData: any = { ...updateMeterReadingDto };
+  async update(id: string, updateMeterReadingDto: UpdateMeterReadingDto, updatedBy?: string) {
+    const updateData: any = { ...updateMeterReadingDto, updatedBy };
     if (updateMeterReadingDto.flatNo) {
       const member = await this.membersService.findByFlatNo(updateMeterReadingDto.flatNo);
       if (!member) {
