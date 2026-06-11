@@ -1,0 +1,375 @@
+# System Flow & API Routes Documentation
+
+This document provides a comprehensive overview of the system design, flow architectures, and all available API routes (including methods, paths, payloads, and response shapes).
+
+---
+
+## 1. System Architectures & Flows
+
+### Authentication Flow
+Authenticates user login inputs against the database `Member` records.
+```mermaid
+sequenceDiagram
+    actor Client
+    participant AuthController
+    participant AuthService
+    participant MembersService
+    participant Database
+
+    Client->>AuthController: POST /api/auth/login { username, password }
+    AuthController->>AuthService: signIn(username, password)
+    AuthService->>MembersService: findByFirstName(username)
+    MembersService->>Database: query by firstName (Case-insensitive ILike)
+    Database-->>MembersService: return Member details
+    MembersService-->>AuthService: return Member or undefined
+
+    alt Mock Fallback Bypassed (username="john", password="password")
+        AuthService->>AuthService: Mock member object
+    end
+
+    alt Member not found OR phone number !== password
+        AuthService-->>Client: 401 Unauthorized Exception
+    else Credentials match
+        AuthService->>AuthService: Sign JWT token { sub: member.id, username: member.firstName }
+        AuthService-->>Client: Return { access_token }
+    end
+```
+
+### Dynamic Individual Expense Calculation Flow
+When creating or updating an individual flat's expense, the rate per unit (`ratePerUnit`) is calculated dynamically from the monthly overview rather than manually provided in the payload.
+```mermaid
+graph TD
+    A[Create / Update Request] --> B[Resolve Member by flatNo]
+    B --> C[Resolve flat's MeterReading for selected month]
+    C --> D[Compute Flat Consumption: currentReading - previousReading]
+    D --> E[Query monthly Expense Overview]
+    E --> F[Extract oneLiterCharge]
+    F --> G[Save IndividualExpense record: ratePerUnit = oneLiterCharge]
+```
+
+---
+
+## 2. API Routes Reference
+
+All endpoint base URLs are prefixed with `/api`. Protected routes require the header `Authorization: Bearer <access_token>`.
+
+---
+
+### A. Authentication Module
+
+#### 1. Login Authentication
+* **HTTP Method**: `POST`
+* **URL**: `/api/auth/login`
+* **Authorization**: None
+* **Request Payload**:
+  ```json
+  {
+    "username": "john",
+    "password": "password"
+  }
+  ```
+* **Response Payload**:
+  ```json
+  {
+    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  }
+  ```
+
+#### 2. Get Authenticated User Profile
+* **HTTP Method**: `GET`
+* **URL**: `/api/auth/profile`
+* **Authorization**: Required (JWT Bearer Token)
+* **Response Payload**:
+  ```json
+  {
+    "sub": "mock-john-uuid",
+    "username": "john",
+    "iat": 1718104523,
+    "exp": 1718110523
+  }
+  ```
+
+---
+
+### B. Expenses Module
+
+#### 1. Create Expense
+* **HTTP Method**: `POST`
+* **URL**: `/api/expenses`
+* **Authorization**: Required (JWT Bearer Token)
+* **Request Payload**:
+  ```json
+  {
+    "type": "water", // Options: 'water', 'electricity maintenance', 'electricity bill', 'watchmen salary', 'lift maintenance and parts', 'motor maintenance', 'other'
+    "waterSource": "tanker", // Required if type="water". Options: 'tanker', 'main water', 'borewell'
+    "amount": 2500,
+    "date": "2026-06-11",
+    "category": "utility", // Optional
+    "comments": "Regular monthly water tanker" // Optional
+  }
+  ```
+* **Response Payload**:
+  ```json
+  {
+    "id": "6a9e88bf-9eb8-4223-9e4a-5f50a80e1d51",
+    "type": "water",
+    "waterSource": "tanker",
+    "amount": 2500,
+    "date": "2026-06-11T00:00:00.000Z",
+    "category": "utility",
+    "comments": "Regular monthly water tanker",
+    "createdBy": "mock-john-uuid",
+    "createdAt": "2026-06-11T16:00:00.000Z",
+    "updatedAt": "2026-06-11T16:00:00.000Z"
+  }
+  ```
+
+#### 2. Get Expense Overview (Calculated Utility Metrics)
+* **HTTP Method**: `GET`
+* **URL**: `/api/expenses/overview?month=YYYY-MM`  
+  *(If query `month` is omitted, defaults to the current month in `YYYY-MM` format)*
+* **Authorization**: Required (JWT Bearer Token)
+* **Response Payload**:
+  ```json
+  {
+    "selectedMonth": "2026-06",
+    "totalMeterReading": 1500.5,
+    "totalWaterAmount": 3000,
+    "totalOtherExpenseAmount": 1500,
+    "oneLiterCharge": 2,
+    "totalAllExpense": 4500,
+    "meta": {
+      "expensesCount": 5,
+      "meterReadingsCount": 12
+    }
+  }
+  ```
+
+#### 3. Find All Expenses
+* **HTTP Method**: `GET`
+* **URL**: `/api/expenses?page=1&limit=10&search=water&sort=createdAt:DESC`
+* **Authorization**: None
+* **Response Payload**:
+  ```json
+  {
+    "expenses": [
+      {
+        "id": "6a9e88bf-9eb8-4223-9e4a-5f50a80e1d51",
+        "type": "water",
+        "amount": 2500,
+        "date": "2026-06-11"
+      }
+    ],
+    "total": 1,
+    "page": 1,
+    "limit": 10,
+    "totalAmount": 2500
+  }
+  ```
+
+#### 4. Find One Expense
+* **HTTP Method**: `GET`
+* **URL**: `/api/expenses/:id`
+* **Authorization**: None
+* **Response Payload**: Returns one expense object (same structure as Create response).
+
+#### 5. Update Expense
+* **HTTP Method**: `PATCH`
+* **URL**: `/api/expenses/:id`
+* **Authorization**: Required (JWT Bearer Token)
+* **Request Payload**: (All fields optional, same fields as Create Expense DTO)
+* **Response Payload**: Returns the updated expense object with the `updatedBy` property populated.
+
+#### 6. Delete Expense
+* **HTTP Method**: `DELETE`
+* **URL**: `/api/expenses/:id`
+* **Authorization**: None
+* **Response Payload**:
+  ```json
+  {
+    "deleted": true
+  }
+  ```
+
+---
+
+### C. Members Module
+
+#### 1. Create Member
+* **HTTP Method**: `POST`
+* **URL**: `/api/members`
+* **Authorization**: Required (JWT Bearer Token)
+* **Request Payload**:
+  ```json
+  {
+    "firstName": "John",
+    "lastName": "Doe",
+    "phoneNumber": "9876543210",
+    "flatNo": "102A",
+    "active": true, // Optional (defaults to true)
+    "description": "Owner of flat 102A" // Optional
+  }
+  ```
+* **Response Payload**: Returns the saved member object (includes `id`, `createdBy`, `createdAt`, `updatedAt`).
+
+#### 2. Find All Members
+* **HTTP Method**: `GET`
+* **URL**: `/api/members?page=1&limit=10&searchTerm=John&sort=createdAt:DESC`
+* **Authorization**: None
+* **Response Payload**:
+  ```json
+  {
+    "data": [
+      {
+        "id": "b3e8c950-8b1e-4c5c-9c3f-4e50d80c1d51",
+        "firstName": "John",
+        "lastName": "Doe",
+        "phoneNumber": "9876543210",
+        "flatNo": "102A",
+        "active": true
+      }
+    ],
+    "total": 1,
+    "page": 1,
+    "limit": 10
+  }
+  ```
+
+#### 3. Find One Member
+* **HTTP Method**: `GET`
+* **URL**: `/api/members/:uuid`
+* **Authorization**: None
+
+#### 4. Update Member
+* **HTTP Method**: `PATCH`
+* **URL**: `/api/members/:uuid`
+* **Authorization**: Required (JWT Bearer Token)
+* **Request Payload**: (All fields optional)
+* **Response Payload**: Returns the updated member object.
+
+#### 5. Delete Member
+* **HTTP Method**: `DELETE`
+* **URL**: `/api/members/:uuid`
+* **Authorization**: None
+
+---
+
+### D. Meter Readings Module
+
+#### 1. Create Meter Reading
+* **HTTP Method**: `POST`
+* **URL**: `/api/meter-reading`
+* **Authorization**: Required (JWT Bearer Token)
+* **Request Payload**:
+  ```json
+  {
+    "flatNo": "102A",
+    "currentReading": 520.4,
+    "previousReading": 480.2, // Optional
+    "readingDate": "2026-06-11", // YYYY-MM-DD
+    "notes": "June regular reading" // Optional
+  }
+  ```
+* **Response Payload**: Returns the saved meter reading object (includes `id`, `memberId`, `createdBy`, `createdAt`, `updatedAt`).
+
+#### 2. Find All Meter Readings
+* **HTTP Method**: `GET`
+* **URL**: `/api/meter-reading?page=1&limit=10`
+* **Authorization**: None
+
+#### 3. Find One Meter Reading
+* **HTTP Method**: `GET`
+* **URL**: `/api/meter-reading/:uuid`
+* **Authorization**: None
+
+#### 4. Update Meter Reading
+* **HTTP Method**: `PATCH`
+* **URL**: `/api/meter-reading/:uuid`
+* **Authorization**: Required (JWT Bearer Token)
+* **Request Payload**: (All fields optional)
+
+#### 5. Delete Meter Reading
+* **HTTP Method**: `DELETE`
+* **URL**: `/api/meter-reading/:uuid`
+* **Authorization**: None
+
+---
+
+### E. Collection Amount Module
+
+#### 1. Create Collection Amount (Payments Received)
+* **HTTP Method**: `POST`
+* **URL**: `/api/collection-amount`
+* **Authorization**: Required (JWT Bearer Token)
+* **Request Payload**:
+  ```json
+  {
+    "flatNo": "102A",
+    "amount": 1200,
+    "date": "2026-06-11", // YYYY-MM-DD
+    "paymentMethod": "UPI", // Optional
+    "description": "Maintenance payment June" // Optional
+  }
+  ```
+* **Response Payload**: Returns the saved collection object.
+
+#### 2. Find All Collection Amounts
+* **HTTP Method**: `GET`
+* **URL**: `/api/collection-amount?page=1&limit=10`
+* **Authorization**: None
+
+#### 3. Find One Collection Amount
+* **HTTP Method**: `GET`
+* **URL**: `/api/collection-amount/:uuid`
+* **Authorization**: None
+
+#### 4. Update Collection Amount
+* **HTTP Method**: `PATCH`
+* **URL**: `/api/collection-amount/:uuid`
+* **Authorization**: Required (JWT Bearer Token)
+* **Request Payload**: (All fields optional)
+
+#### 5. Delete Collection Amount
+* **HTTP Method**: `DELETE`
+* **URL**: `/api/collection-amount/:uuid`
+* **Authorization**: None
+
+---
+
+### F. Individual Expense Module
+
+#### 1. Create Individual Expense
+* **HTTP Method**: `POST`
+* **URL**: `/api/individual-expense`
+* **Authorization**: Required (JWT Bearer Token)
+* **Request Payload**:
+  ```json
+  {
+    "flatNo": "102A",
+    "date": "2026-06-11", // YYYY-MM-DD
+    "notes": "Testing auto rate calculation" // Optional
+  }
+  ```
+  *(Note: `ratePerUnit` is calculated automatically from the monthly overview oneLiterCharge. `totalExpense` is set as `flat_consumption * ratePerUnit`)*
+* **Response Payload**: Returns the saved individual expense record.
+
+#### 2. Find All Individual Expenses
+* **HTTP Method**: `GET`
+* **URL**: `/api/individual-expense?page=1&limit=10`
+* **Authorization**: None
+
+#### 3. Find One Individual Expense
+* **HTTP Method**: `GET`
+* **URL**: `/api/individual-expense/:uuid`
+* **Authorization**: None
+
+#### 4. Update Individual Expense
+* **HTTP Method**: `PATCH`
+* **URL**: `/api/individual-expense/:uuid`
+* **Authorization**: Required (JWT Bearer Token)
+* **Request Payload**: (All fields optional)
+
+#### 5. Delete Individual Expense
+* **HTTP Method**: `DELETE`
+* **URL**: `/api/individual-expense/:uuid`
+* **Authorization**: None
