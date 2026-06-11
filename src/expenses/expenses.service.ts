@@ -82,22 +82,8 @@ export class ExpensesService {
   }
 
   async getOverview(month?: string) {
-    const datePattern = /^\d{4}-\d{2}$/;
-    
-    const date = new Date();
-    const currentMonth = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-    const selectedMonth = month || currentMonth;
-
-    if (!datePattern.test(selectedMonth)) {
-      throw new BadRequestException('Invalid month format. Please use YYYY-MM format.');
-    }
-
-    const [yearStr, monthStr] = selectedMonth.split('-');
-    const year = parseInt(yearStr, 10);
-    const monthNum = parseInt(monthStr, 10);
-
-    const startDate = new Date(year, monthNum - 1, 1);
-    const endDate = new Date(year, monthNum, 0, 23, 59, 59, 999);
+    const selectedMonth = this.validateAndNormalizeMonth(month);
+    const { startDate, endDate } = this.getDateRangeForMonth(selectedMonth);
 
     const meterReadings = await this.meterReadingRepository.find({
       where: {
@@ -105,15 +91,7 @@ export class ExpensesService {
       },
     });
 
-    let totalMeterReading = 0;
-    meterReadings.forEach((reading) => {
-      const current = Number(reading.currentReading);
-      const previous = Number(reading.previousReading ?? 0);
-      const consumption = current - previous;
-      if (consumption > 0) {
-        totalMeterReading += consumption;
-      }
-    });
+    const totalMeterReading = this.calculateTotalMeterReading(meterReadings);
 
     const expenses = await this.expensesRepository.find({
       where: {
@@ -121,19 +99,9 @@ export class ExpensesService {
       },
     });
 
-    let totalWaterAmount = 0;
-    let totalOtherExpenseAmount = 0;
+    const { totalWaterAmount, totalOtherExpenseAmount, totalAllExpense } =
+      this.calculateExpenses(expenses);
 
-    expenses.forEach((expense) => {
-      const amount = Number(expense.amount);
-      if (expense.type === ExpenseType.WATER) {
-        totalWaterAmount += amount;
-      } else {
-        totalOtherExpenseAmount += amount;
-      }
-    });
-
-    const totalAllExpense = totalWaterAmount + totalOtherExpenseAmount;
     const oneLiterCharge = totalMeterReading > 0 ? totalWaterAmount / totalMeterReading : 0;
 
     return {
@@ -147,6 +115,65 @@ export class ExpensesService {
         expensesCount: expenses.length,
         meterReadingsCount: meterReadings.length,
       },
+    };
+  }
+
+  validateAndNormalizeMonth(month?: string): string {
+    const datePattern = /^\d{4}-\d{2}$/;
+    const date = new Date();
+    const currentMonth = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+    const selectedMonth = month || currentMonth;
+
+    if (!datePattern.test(selectedMonth)) {
+      throw new BadRequestException('Invalid month format. Please use YYYY-MM format.');
+    }
+    return selectedMonth;
+  }
+
+  getDateRangeForMonth(selectedMonth: string): { startDate: Date; endDate: Date } {
+    const [yearStr, monthStr] = selectedMonth.split('-');
+    const year = parseInt(yearStr, 10);
+    const monthNum = parseInt(monthStr, 10);
+
+    const startDate = new Date(year, monthNum - 1, 1);
+    const endDate = new Date(year, monthNum, 0, 23, 59, 59, 999);
+    return { startDate, endDate };
+  }
+
+  calculateTotalMeterReading(meterReadings: MeterReading[]): number {
+    let totalMeterReading = 0;
+    meterReadings.forEach((reading) => {
+      const current = Number(reading.currentReading);
+      const previous = Number(reading.previousReading ?? 0);
+      const consumption = current - previous;
+      if (consumption > 0) {
+        totalMeterReading += consumption;
+      }
+    });
+    return totalMeterReading;
+  }
+
+  calculateExpenses(expenses: Expense[]): {
+    totalWaterAmount: number;
+    totalOtherExpenseAmount: number;
+    totalAllExpense: number;
+  } {
+    let totalWaterAmount = 0;
+    let totalOtherExpenseAmount = 0;
+
+    expenses.forEach((expense) => {
+      const amount = Number(expense.amount);
+      if (expense.type === ExpenseType.WATER) {
+        totalWaterAmount += amount;
+      } else {
+        totalOtherExpenseAmount += amount;
+      }
+    });
+
+    return {
+      totalWaterAmount,
+      totalOtherExpenseAmount,
+      totalAllExpense: totalWaterAmount + totalOtherExpenseAmount,
     };
   }
 }

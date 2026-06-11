@@ -9,6 +9,7 @@ import { MeterReading } from '../meter_reading/entities/meter_reading.entity';
   imports: [TypeOrmModule.forFeature([Expense, MeterReading])],
   controllers: [ExpensesController],
   providers: [ExpensesService],
+  exports: [ExpensesService],
 })
 export class ExpensesModule {}
 

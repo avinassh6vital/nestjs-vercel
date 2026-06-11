@@ -6,10 +6,10 @@ export class CreateIndividualExpenseDto {
   @Min(1)
   flatNo: number;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsNumber()
   @Min(0)
-  ratePerUnit: number;
+  ratePerUnit?: number;
 
   @IsNotEmpty()
   @IsDateString()

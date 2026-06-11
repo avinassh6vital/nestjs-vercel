@@ -7,6 +7,7 @@ import { UpdateIndividualExpenseDto } from './dto/update-individual-expense.dto'
 import { MeterReading } from '../meter_reading/entities/meter_reading.entity';
 import { MembersService } from '../members/members.service';
 import { buildQueryOptions } from '../utils/filter.util';
+import { ExpensesService } from '../expenses/expenses.service';
 
 @Injectable()
 export class IndividualExpenseService {
@@ -16,6 +17,7 @@ export class IndividualExpenseService {
     @InjectRepository(MeterReading)
     private readonly meterReadingRepository: Repository<MeterReading>,
     private readonly membersService: MembersService,
+    private readonly expensesService: ExpensesService,
   ) {}
 
   async create(dto: CreateIndividualExpenseDto) {
@@ -52,8 +54,10 @@ export class IndividualExpenseService {
       );
     }
 
-    // 5. Calculate total expense
-    const totalExpense = meterReadingTotal * dto.ratePerUnit;
+    // 5. Calculate total expense using the dynamic oneLiterCharge from expenses overview
+    const overview = await this.expensesService.getOverview(dateStr);
+    const ratePerUnit = overview.oneLiterCharge;
+    const totalExpense = meterReadingTotal * ratePerUnit;
 
     // 6. Create entity
     const expense = this.individualExpenseRepository.create({
@@ -61,7 +65,7 @@ export class IndividualExpenseService {
       memberId: member.id,
       meterReadingId: reading.id,
       meterReadingTotal,
-      ratePerUnit: dto.ratePerUnit,
+      ratePerUnit,
       totalExpense,
       date: new Date(dto.date),
       notes: dto.notes,
@@ -135,7 +139,6 @@ export class IndividualExpenseService {
     const updateData: any = { ...dto };
 
     const targetFlatNo = dto.flatNo !== undefined ? dto.flatNo : current.flatNo;
-    const targetRate = dto.ratePerUnit !== undefined ? dto.ratePerUnit : Number(current.ratePerUnit);
     const targetDate = dto.date !== undefined ? dto.date : current.date.toISOString().substring(0, 10);
 
     let memberId = current.memberId;
@@ -148,7 +151,7 @@ export class IndividualExpenseService {
       updateData.memberId = memberId;
     }
 
-    if (dto.flatNo !== undefined || dto.date !== undefined || dto.ratePerUnit !== undefined) {
+    if (dto.flatNo !== undefined || dto.date !== undefined) {
       const dateStr = targetDate.substring(0, 7); // "YYYY-MM"
       const reading = await this.meterReadingRepository.findOne({
         where: {
@@ -171,10 +174,14 @@ export class IndividualExpenseService {
         );
       }
 
+      const overview = await this.expensesService.getOverview(dateStr);
+      const ratePerUnit = overview.oneLiterCharge;
+
       updateData.flatNo = targetFlatNo;
       updateData.meterReadingId = reading.id;
       updateData.meterReadingTotal = meterReadingTotal;
-      updateData.totalExpense = meterReadingTotal * targetRate;
+      updateData.ratePerUnit = ratePerUnit;
+      updateData.totalExpense = meterReadingTotal * ratePerUnit;
     }
 
     if (dto.date) {
