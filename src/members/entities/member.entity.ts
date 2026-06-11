@@ -24,7 +24,7 @@ export class Member {
   phoneNumber: string;
 
   @Column()
-  flatNo: number;
+  flatNo: string;
 
   @Column({ default: true })
   active: boolean;

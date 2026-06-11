@@ -1,11 +1,10 @@
-import { IsNotEmpty, IsNumber, Min, IsOptional, IsDateString, MaxLength, IsUUID } from 'class-validator';
+import { IsNotEmpty, IsNumber, Min, IsOptional, IsDateString, MaxLength, IsUUID, IsString } from 'class-validator';
 
 export class CreateMeterReadingDto {
 
   @IsNotEmpty()
-  @IsNumber()
-  @Min(1)
-  flatNo: number;
+  @IsString()
+  flatNo: string;
 
   @IsNotEmpty()
   @IsNumber()

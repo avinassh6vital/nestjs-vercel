@@ -1,8 +1,8 @@
 import { IsNumber, IsDateString, IsOptional, IsString, IsUUID } from 'class-validator';
 
 export class CreateCollectionAmountDto {
-  @IsNumber()
-  flatNo: number;
+  @IsString()
+  flatNo: string;
 
   @IsNumber()
   amount: number;

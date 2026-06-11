@@ -8,7 +8,7 @@ export class MeterReading {
   id: string;
 
   @Column()
-  flatNo: number;
+  flatNo: string;
 
   @Column('decimal', { precision: 10, scale: 2 })
   currentReading: number;

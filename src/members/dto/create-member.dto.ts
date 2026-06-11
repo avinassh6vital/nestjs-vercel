@@ -13,9 +13,9 @@ export class CreateMemberDto {
   @IsNotEmpty()
   phoneNumber: string;
 
-  @IsNumber()
+  @IsString()
   @IsNotEmpty()
-  flatNo: number;
+  flatNo: string;
 
   @IsBoolean()
   @IsOptional()

@@ -62,7 +62,7 @@ export class MembersService {
     });
   }
 
-  findByFlatNo(flatNo: number) {
+  findByFlatNo(flatNo: string) {
     return this.memberRepository.findOne({
       where: { flatNo, active: true },
     });

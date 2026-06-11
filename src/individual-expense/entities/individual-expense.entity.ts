@@ -15,8 +15,8 @@ export class IndividualExpense {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column('integer')
-  flatNo: number;
+  @Column()
+  flatNo: string;
 
   @Column({ nullable: true })
   memberId?: string;

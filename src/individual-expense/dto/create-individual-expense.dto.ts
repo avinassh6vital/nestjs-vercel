@@ -2,9 +2,8 @@ import { IsNotEmpty, IsNumber, Min, IsOptional, IsUUID, IsDateString, IsString }
 
 export class CreateIndividualExpenseDto {
   @IsNotEmpty()
-  @IsNumber()
-  @Min(1)
-  flatNo: number;
+  @IsString()
+  flatNo: string;
 
   @IsOptional()
   @IsNumber()

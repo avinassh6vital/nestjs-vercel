@@ -15,7 +15,7 @@ export class CollectionAmount {
   id: string;
 
   @Column()
-  flatNo: number;
+  flatNo: string;
 
   @Column('decimal', { precision: 10, scale: 2 })
   amount: number;
