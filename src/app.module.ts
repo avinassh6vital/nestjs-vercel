@@ -1,9 +1,66 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { UsersModule } from './users/users.module';
+//import { SequelizeModule } from '@nestjs/sequelize';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { EmployeeModule } from './employee/employee.module';
+import { User } from './users/entities/user.entity';
+import { Employee } from './employee/entities/employee.entity';
+import { AuthModule } from './auth/auth.module';
+import { UsersDataModule } from './users-data/users-data.module';
+import { ConfigModule } from '@nestjs/config';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
+import { databaseConfig } from './database/config';
+import { ExpensesModule } from './expenses/expenses.module';
+import { Expense } from './expenses/entities/expense.entity';
+import { CollectionAmountModule } from './collection-amount/collection-amount.module';
+import { CollectionAmount } from './collection-amount/entities/collection-amount.entity';
+import { MeterReadingModule } from './meter_reading/meter_reading.module';
+import { MeterReading } from './meter_reading/entities/meter_reading.entity';
+import { MembersModule } from './members/members.module';
+import { Member } from './members/entities/member.entity';
+import { IndividualExpenseModule } from './individual-expense/individual-expense.module';
+import { IndividualExpense } from './individual-expense/entities/individual-expense.entity';
+import { UploadModule } from './upload/upload.module';
+import { Upload } from './upload/entities/upload.entity';
 
 @Module({
-  imports: [],
+  imports: [
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+    // SequelizeModule.forRoot({
+    //   ...databaseConfig,
+    //   models: [User],
+    //   autoLoadModels: true,
+    //   synchronize: true,
+    // }),
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', 'public'),
+    }),
+    ConfigModule.forRoot(),
+    TypeOrmModule.forRoot({
+      ...databaseConfig,
+      //type: 'postgres',
+      //url: process.env.DATABASE_URL,
+      // ssl: {
+      //   rejectUnauthorized: false, // for render
+      // },
+      synchronize: true,
+      entities: [User, Employee, Expense, CollectionAmount, MeterReading, Member, IndividualExpense, Upload],
+      //entities: [__dirname + '/entity/*{.js,.ts}'],
+    }),
+    UsersModule,
+    EmployeeModule,
+    AuthModule,
+    UsersDataModule,
+    ExpensesModule,
+    CollectionAmountModule,
+    MeterReadingModule,
+    MembersModule,
+    IndividualExpenseModule,
+    UploadModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })

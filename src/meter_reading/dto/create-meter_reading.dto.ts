@@ -1,0 +1,38 @@
+import { IsNotEmpty, IsNumber, Min, IsOptional, IsDateString, MaxLength, IsUUID, IsString } from 'class-validator';
+
+export class CreateMeterReadingDto {
+
+  @IsNotEmpty()
+  @IsString()
+  flatNo: string;
+
+  @IsNotEmpty()
+  @IsNumber()
+  @Min(0)
+  currentReading: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  previousReading?: number;
+
+  @IsDateString()
+  readingDate: string; // YYYY-MM-DD
+
+  @IsOptional()
+  @MaxLength(200)
+  notes?: string;
+
+  @IsOptional()
+  @IsUUID()
+  memberId?: string;
+
+  @IsOptional()
+  @IsString()
+  createdBy?: string;
+
+  @IsOptional()
+  @IsString()
+  updatedBy?: string;
+}
+
