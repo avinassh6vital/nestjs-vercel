@@ -24,6 +24,7 @@ import { Member } from './members/entities/member.entity';
 import { IndividualExpenseModule } from './individual-expense/individual-expense.module';
 import { IndividualExpense } from './individual-expense/entities/individual-expense.entity';
 import { UploadModule } from './upload/upload.module';
+import { Upload } from './upload/entities/upload.entity';
 
 @Module({
   imports: [
@@ -46,7 +47,7 @@ import { UploadModule } from './upload/upload.module';
       //   rejectUnauthorized: false, // for render
       // },
       synchronize: true,
-      entities: [User, Employee, Expense, CollectionAmount, MeterReading, Member, IndividualExpense],
+      entities: [User, Employee, Expense, CollectionAmount, MeterReading, Member, IndividualExpense, Upload],
       //entities: [__dirname + '/entity/*{.js,.ts}'],
     }),
     UsersModule,

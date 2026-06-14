@@ -1,11 +1,13 @@
-// export class Expense {}
 import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
+import { Upload } from '../../upload/entities/upload.entity';
 
 export enum ExpenseType {
   WATER = 'water',
@@ -72,7 +74,11 @@ export class Expense {
   @Column({
     nullable: true,
   })
-  attachmentUrl?: string;
+  attachmentId?: string;
+
+  @ManyToOne(() => Upload, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'attachmentId' })
+  attachment?: Upload;
 
   @Column({
     nullable: true,

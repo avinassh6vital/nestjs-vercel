@@ -8,6 +8,7 @@ import {
   IsNotEmpty,
   ValidateIf,
   IsEnum,
+  IsUUID,
 } from 'class-validator';
 import { ExpenseType, WaterSource } from '../entities/expense.entity';
 
@@ -41,8 +42,8 @@ export class CreateExpenseDto {
   comments?: string;
 
   @IsOptional()
-  @IsString()
-  attachmentUrl?: string;
+  @IsUUID()
+  attachmentId?: string;
 
   @IsOptional()
   @IsString()
