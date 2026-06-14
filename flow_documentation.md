@@ -406,3 +406,13 @@ All endpoint base URLs are prefixed with `/api`. Protected routes require the he
     "createdAt": "2026-06-14T15:00:00.000Z"
   }
   ```
+
+#### 2. Open / Retrieve File by Database ID
+* **HTTP Method**: `GET`
+* **URL**: `/api/upload/:id`  
+  *(where `:id` is the UUID of the upload record)*
+* **Authorization**: None
+* **Response Payload**: Streams the binary file directly to the client browser to render/display the file (image/PDF).
+
+###killall node
+

@@ -40,4 +40,8 @@ export class UploadService {
       createdAt: saved.createdAt,
     };
   }
+
+  async findOne(id: string): Promise<Upload | null> {
+    return this.uploadRepository.findOne({ where: { id } });
+  }
 }
