@@ -23,6 +23,7 @@ import { MembersModule } from './members/members.module';
 import { Member } from './members/entities/member.entity';
 import { IndividualExpenseModule } from './individual-expense/individual-expense.module';
 import { IndividualExpense } from './individual-expense/entities/individual-expense.entity';
+import { UploadModule } from './upload/upload.module';
 
 @Module({
   imports: [
@@ -57,6 +58,7 @@ import { IndividualExpense } from './individual-expense/entities/individual-expe
     MeterReadingModule,
     MembersModule,
     IndividualExpenseModule,
+    UploadModule,
   ],
   controllers: [AppController],
   providers: [AppService],

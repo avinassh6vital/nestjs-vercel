@@ -42,6 +42,10 @@ export class CreateExpenseDto {
 
   @IsOptional()
   @IsString()
+  attachmentUrl?: string;
+
+  @IsOptional()
+  @IsString()
   createdBy?: string;
 
   @IsOptional()

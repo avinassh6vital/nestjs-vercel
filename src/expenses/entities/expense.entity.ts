@@ -72,6 +72,11 @@ export class Expense {
   @Column({
     nullable: true,
   })
+  attachmentUrl?: string;
+
+  @Column({
+    nullable: true,
+  })
   createdBy?: string;
 
   @Column({
