@@ -228,7 +228,11 @@ All endpoint base URLs are prefixed with `/api`. Protected routes require the he
         "lastName": "Doe",
         "phoneNumber": "9876543210",
         "flatNo": "102A",
-        "active": true
+        "active": true,
+        "totalCollected": 12000,
+        "totalExpense": 9500.5,
+        "availableBalance": 2499.5,
+        "remainderBalance": 2499.5
       }
     ],
     "total": 1,
@@ -241,6 +245,21 @@ All endpoint base URLs are prefixed with `/api`. Protected routes require the he
 * **HTTP Method**: `GET`
 * **URL**: `/api/members/:uuid`
 * **Authorization**: None
+* **Response Payload**:
+  ```json
+  {
+    "id": "b3e8c950-8b1e-4c5c-9c3f-4e50d80c1d51",
+    "firstName": "John",
+    "lastName": "Doe",
+    "phoneNumber": "9876543210",
+    "flatNo": "102A",
+    "active": true,
+    "totalCollected": 12000,
+    "totalExpense": 9500.5,
+    "availableBalance": 2499.5,
+    "remainderBalance": 2499.5
+  }
+  ```
 
 #### 4. Update Member
 * **HTTP Method**: `PATCH`
@@ -385,6 +404,16 @@ All endpoint base URLs are prefixed with `/api`. Protected routes require the he
   - `Content-Type`: `application/pdf`
   - `Content-Disposition`: `attachment; filename="expense-<flatNo>-<month>.pdf"`
 * **Response Payload**: Streams the binary PDF data directly to the client browser to trigger a download.
+* **Layout Design Details**:
+  - **Account Balance Summary Card**: Placed parallel to the **Total Due Breakdown** card. It lists:
+    - *Monthly Expense Amount*: Total billing for the target month (water utility consumption charge + shared maintenance pool share).
+    - *Monthly Collected Amount*: Total collections/payments registered for that flat during the target month.
+    - *Remainder Balance*: Running net balance up to the target month, displaying `+` (Credit) or `-` (Due).
+  - **Member Statement Ledger**: A historical transaction grid rendered at the bottom of the invoice showing the last 4 months of transactions. Columns include:
+    - *Billing Month*: Full month name and year (e.g., "June 2026").
+    - *Individual Expense*: Total flat expenses (including splits) for that month.
+    - *Individual Collected*: Total payments received for that month.
+    - *Remainder Balance*: Running cumulative balance after the month's transactions.
 
 ---
 
@@ -413,6 +442,4 @@ All endpoint base URLs are prefixed with `/api`. Protected routes require the he
   *(where `:id` is the UUID of the upload record)*
 * **Authorization**: None
 * **Response Payload**: Streams the binary file directly to the client browser to render/display the file (image/PDF).
-
-###killall node
 

@@ -4,6 +4,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { IndividualExpense } from './entities/individual-expense.entity';
 import { MeterReading } from '../meter_reading/entities/meter_reading.entity';
 import { MembersService } from '../members/members.service';
+import { ExpensesService } from '../expenses/expenses.service';
 
 describe('IndividualExpenseService', () => {
   let service: IndividualExpenseService;
@@ -23,6 +24,12 @@ describe('IndividualExpenseService', () => {
 
   const mockMembersService = {
     findByFlatNo: jest.fn(),
+    getLedgerForFlat: jest.fn().mockResolvedValue([]),
+  };
+
+  const mockExpensesService = {
+    getOverview: jest.fn(),
+    findAll: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -41,6 +48,10 @@ describe('IndividualExpenseService', () => {
           provide: MembersService,
           useValue: mockMembersService,
         },
+        {
+          provide: ExpensesService,
+          useValue: mockExpensesService,
+        },
       ],
     }).compile();
 
@@ -51,3 +62,4 @@ describe('IndividualExpenseService', () => {
     expect(service).toBeDefined();
   });
 });
+

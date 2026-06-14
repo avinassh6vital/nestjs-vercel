@@ -10,6 +10,7 @@ import { buildQueryOptions } from '../utils/filter.util';
 import { ExpensesService } from '../expenses/expenses.service';
 import { Response } from 'express';
 import PDFDocument from 'pdfkit';
+import { formatYearMonth } from '../utils/date.util';
 
 @Injectable()
 export class IndividualExpenseService {
@@ -275,6 +276,17 @@ export class IndividualExpenseService {
       await this.individualExpenseRepository.save(individualExpense);
     }
 
+    // 6.1. Get historical ledger and calculate balance up to selectedMonth using MembersService
+    const ledger = await this.membersService.getLedgerForFlat(flatNo);
+    const currentMonthLedger = ledger.find(r => r.monthStr === selectedMonth);
+    const individualCollectAmount = currentMonthLedger ? currentMonthLedger.collected : 0;
+
+    const pastOrCurrentRows = ledger.filter(r => r.monthStr <= selectedMonth);
+    const availableBalance = pastOrCurrentRows.length > 0
+      ? pastOrCurrentRows[pastOrCurrentRows.length - 1].balance
+      : 0;
+    const displayLedgerRows = pastOrCurrentRows.slice(-4);
+
     // 7. Start PDF generation
     const safeFlatNo = flatNo.replace(/[\r\n"]/g, '').trim();
     const safeMonth = selectedMonth.replace(/[\r\n"]/g, '').trim();
@@ -446,23 +458,88 @@ export class IndividualExpenseService {
 
     // ---------------- FINAL TOTAL INVOICE SUMMARY ----------------
     const summaryY = expenseY + 25;
-    doc.rect(300, summaryY, 255, 75).strokeColor(primaryColor).lineWidth(1.5).stroke();
-    doc.rect(301, summaryY + 1, 253, 20).fill(primaryColor);
+
+    // Left side: Account Statement Summary Card
+    doc.rect(40, summaryY, 250, 75).strokeColor(secondaryColor).lineWidth(1.5).stroke();
+    doc.rect(41, summaryY + 1, 248, 20).fill(secondaryColor);
     
     doc.fillColor('#FFFFFF').font('Helvetica-Bold').fontSize(9);
-    doc.text('TOTAL DUE BREAKDOWN', 310, summaryY + 7);
+    doc.text('ACCOUNT BALANCE SUMMARY', 50, summaryY + 7);
     
     doc.fillColor(darkNeutral).font('Helvetica').fontSize(9);
-    doc.text('Water Utility Cost:', 310, summaryY + 30);
+    doc.text('Monthly Expense Amount:', 50, summaryY + 30);
+    doc.text(`Rs. ${grandTotal.toFixed(2)}`, 175, summaryY + 30, { width: 100, align: 'right' });
+    
+    doc.text('Monthly Collected Amount:', 50, summaryY + 45);
+    doc.text(`Rs. ${individualCollectAmount.toFixed(2)}`, 175, summaryY + 45, { width: 100, align: 'right' });
+    
+    doc.moveTo(50, summaryY + 58).lineTo(280, summaryY + 58).strokeColor(borderGrey).lineWidth(1).stroke();
+    doc.fillColor(secondaryColor).font('Helvetica-Bold').fontSize(10);
+    doc.text('Remainder Balance:', 50, summaryY + 63);
+    
+    const balanceSign = availableBalance >= 0 ? '+' : '';
+    const balanceLabel = availableBalance >= 0 ? ' (Credit)' : ' (Due)';
+    doc.text(`${balanceSign}Rs. ${availableBalance.toFixed(2)}${balanceLabel}`, 155, summaryY + 63, { width: 125, align: 'right' });
+
+    // Right side: Total Due Breakdown Card
+    doc.rect(305, summaryY, 250, 75).strokeColor(primaryColor).lineWidth(1.5).stroke();
+    doc.rect(306, summaryY + 1, 248, 20).fill(primaryColor);
+    
+    doc.fillColor('#FFFFFF').font('Helvetica-Bold').fontSize(9);
+    doc.text('TOTAL DUE BREAKDOWN', 315, summaryY + 7);
+    
+    doc.fillColor(darkNeutral).font('Helvetica').fontSize(9);
+    doc.text('Water Utility Cost:', 315, summaryY + 30);
     doc.text(`Rs. ${waterCost.toFixed(2)}`, 440, summaryY + 30, { width: 100, align: 'right' });
     
-    doc.text('Shared Maintenance Share:', 310, summaryY + 45);
+    doc.text('Shared Maintenance Share:', 315, summaryY + 45);
     doc.text(`Rs. ${splitShare.toFixed(2)}`, 440, summaryY + 45, { width: 100, align: 'right' });
     
-    doc.moveTo(310, summaryY + 58).lineTo(545, summaryY + 58).strokeColor(borderGrey).lineWidth(1).stroke();
+    doc.moveTo(315, summaryY + 58).lineTo(545, summaryY + 58).strokeColor(borderGrey).lineWidth(1).stroke();
     doc.fillColor(primaryColor).font('Helvetica-Bold').fontSize(11);
-    doc.text('Grand Total Due:', 310, summaryY + 63);
+    doc.text('Grand Total Due:', 315, summaryY + 63);
     doc.text(`Rs. ${grandTotal.toFixed(2)}`, 440, summaryY + 63, { width: 100, align: 'right' });
+
+    // ---------------- SECTION: MEMBER STATEMENT LEDGER ----------------
+    const ledgerY = summaryY + 95;
+    
+    if (displayLedgerRows.length > 0) {
+      doc.fontSize(11).font('Helvetica-Bold').fillColor(secondaryColor).text('MEMBER STATEMENT LEDGER', 40, ledgerY);
+      
+      // Table Header for Ledger
+      doc.rect(40, ledgerY + 15, 515, 20).fill(secondaryColor);
+      doc.fillColor('#FFFFFF').font('Helvetica-Bold').fontSize(9);
+      doc.text('Billing Month', 50, ledgerY + 21);
+      doc.text('Individual Expense', 150, ledgerY + 21, { width: 120, align: 'right' });
+      doc.text('Individual Collected', 290, ledgerY + 21, { width: 120, align: 'right' });
+      doc.text('Remainder Balance', 430, ledgerY + 21, { width: 110, align: 'right' });
+      
+      let rowY = ledgerY + 35;
+      displayLedgerRows.forEach((row, idx) => {
+        if (idx % 2 === 1) {
+          doc.rect(40, rowY, 515, 20).fill('#F7FAFC');
+        }
+        
+        doc.fillColor(darkNeutral).font('Helvetica').fontSize(9);
+        const [yStr, mStr] = row.monthStr.split('-');
+        const dateObj = new Date(parseInt(yStr, 10), parseInt(mStr, 10) - 1, 1);
+        const formattedMonth = dateObj.toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+        });
+        
+        doc.text(formattedMonth, 50, rowY + 5);
+        doc.text(`Rs. ${row.expense.toFixed(2)}`, 150, rowY + 5, { width: 120, align: 'right' });
+        doc.text(`Rs. ${row.collected.toFixed(2)}`, 290, rowY + 5, { width: 120, align: 'right' });
+        
+        const balSign = row.balance >= 0 ? '+' : '';
+        const balLabel = row.balance >= 0 ? ' (Credit)' : ' (Due)';
+        doc.text(`${balSign}Rs. ${row.balance.toFixed(2)}${balLabel}`, 430, rowY + 5, { width: 110, align: 'right' });
+        
+        doc.rect(40, rowY, 515, 20).strokeColor(borderGrey).stroke();
+        rowY += 20;
+      });
+    }
 
     // ---------------- FOOTER ----------------
     doc.fillColor('#718096')

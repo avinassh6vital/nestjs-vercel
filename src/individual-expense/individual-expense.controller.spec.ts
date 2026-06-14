@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { IndividualExpenseController } from './individual-expense.controller';
 import { IndividualExpenseService } from './individual-expense.service';
+import { JwtService } from '@nestjs/jwt';
 
 describe('IndividualExpenseController', () => {
   let controller: IndividualExpenseController;
@@ -21,6 +22,13 @@ describe('IndividualExpenseController', () => {
           provide: IndividualExpenseService,
           useValue: mockIndividualExpenseService,
         },
+        {
+          provide: JwtService,
+          useValue: {
+            verifyAsync: jest.fn(),
+            sign: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
@@ -31,3 +39,4 @@ describe('IndividualExpenseController', () => {
     expect(controller).toBeDefined();
   });
 });
+
