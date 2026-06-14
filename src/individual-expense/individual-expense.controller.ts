@@ -12,7 +12,9 @@ import {
   HttpException,
   UseGuards,
   Request,
+  Res,
 } from '@nestjs/common';
+import * as express from 'express';
 import { IndividualExpenseService } from './individual-expense.service';
 import { CreateIndividualExpenseDto } from './dto/create-individual-expense.dto';
 import { UpdateIndividualExpenseDto } from './dto/update-individual-expense.dto';
@@ -64,6 +66,31 @@ export class IndividualExpenseController {
     } catch (error) {
       throw new HttpException(
         error.message || 'Internal server error',
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Get('download-pdf')
+  async downloadPdf(
+    @Query('flatNo') flatNo: string,
+    @Query('month') month: string,
+    @Res() res: express.Response,
+  ) {
+    try {
+      if (!flatNo) {
+        throw new HttpException('flatNo query parameter is required', HttpStatus.BAD_REQUEST);
+      }
+      
+      const normalizedMonth = month || new Date().toISOString().substring(0, 7);
+      
+      await this.service.generateExpensePdf(flatNo, normalizedMonth, res);
+    } catch (error) {
+      if (res.headersSent) {
+        return;
+      }
+      throw new HttpException(
+        error.message || 'Failed to generate PDF',
         error.status || HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }

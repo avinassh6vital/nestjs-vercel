@@ -113,6 +113,10 @@ export class MembersService {
   async remove(id: string) {
     await this.memberRepository.delete({ id });
   }
+
+  async countActive(): Promise<number> {
+    return this.memberRepository.count({ where: { active: true } });
+  }
 }
 
 
