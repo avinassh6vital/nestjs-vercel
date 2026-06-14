@@ -105,7 +105,8 @@ All endpoint base URLs are prefixed with `/api`. Protected routes require the he
     "amount": 2500,
     "date": "2026-06-11",
     "category": "utility", // Optional
-    "comments": "Regular monthly water tanker" // Optional
+    "comments": "Regular monthly water tanker", // Optional
+    "attachmentId": "e305e94b-48cd-40a2-9b2f-3d1246ea48d8" // Optional (UUID of uploaded receipt file)
   }
   ```
 * **Response Payload**:
@@ -118,6 +119,7 @@ All endpoint base URLs are prefixed with `/api`. Protected routes require the he
     "date": "2026-06-11T00:00:00.000Z",
     "category": "utility",
     "comments": "Regular monthly water tanker",
+    "attachmentId": "e305e94b-48cd-40a2-9b2f-3d1246ea48d8",
     "createdBy": "mock-john-uuid",
     "createdAt": "2026-06-11T16:00:00.000Z",
     "updatedAt": "2026-06-11T16:00:00.000Z"
@@ -373,3 +375,34 @@ All endpoint base URLs are prefixed with `/api`. Protected routes require the he
 * **HTTP Method**: `DELETE`
 * **URL**: `/api/individual-expense/:uuid`
 * **Authorization**: None
+
+#### 6. Download Individual Expense Invoice as PDF
+* **HTTP Method**: `GET`
+* **URL**: `/api/individual-expense/download-pdf?flatNo=101&month=YYYY-MM`  
+  *(If query `month` is omitted, defaults to the current month in `YYYY-MM` format)*
+* **Authorization**: None
+* **Response Headers**:
+  - `Content-Type`: `application/pdf`
+  - `Content-Disposition`: `attachment; filename="expense-<flatNo>-<month>.pdf"`
+* **Response Payload**: Streams the binary PDF data directly to the client browser to trigger a download.
+
+---
+
+### G. Reusable Upload Module
+
+#### 1. Upload File (Receipts / Invoices / Images)
+* **HTTP Method**: `POST`
+* **URL**: `/api/upload`
+* **Authorization**: Required (JWT Bearer Token)
+* **Request Payload**: Multipart form-data with the file attached under the key `file`.
+* **Response Payload**:
+  ```json
+  {
+    "message": "File uploaded successfully",
+    "id": "e305e94b-48cd-40a2-9b2f-3d1246ea48d8",
+    "filename": "177400000-receipt.png",
+    "originalname": "water_receipt.png",
+    "url": "/uploads/177400000-receipt.png",
+    "createdAt": "2026-06-14T15:00:00.000Z"
+  }
+  ```
