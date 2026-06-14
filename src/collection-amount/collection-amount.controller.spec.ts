@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { CollectionAmountController } from './collection-amount.controller';
 import { CollectionAmountService } from './collection-amount.service';
+import { JwtService } from '@nestjs/jwt';
 
 describe('CollectionAmountController', () => {
   let controller: CollectionAmountController;
@@ -21,6 +22,13 @@ describe('CollectionAmountController', () => {
           provide: CollectionAmountService,
           useValue: mockCollectionAmountService,
         },
+        {
+          provide: JwtService,
+          useValue: {
+            verifyAsync: jest.fn(),
+            sign: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
@@ -31,4 +39,5 @@ describe('CollectionAmountController', () => {
     expect(controller).toBeDefined();
   });
 });
+
 

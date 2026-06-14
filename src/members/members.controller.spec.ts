@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { MembersController } from './members.controller';
 import { MembersService } from './members.service';
+import { JwtService } from '@nestjs/jwt';
 
 describe('MembersController', () => {
   let controller: MembersController;
@@ -21,6 +22,13 @@ describe('MembersController', () => {
           provide: MembersService,
           useValue: mockMembersService,
         },
+        {
+          provide: JwtService,
+          useValue: {
+            verifyAsync: jest.fn(),
+            sign: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
@@ -31,4 +39,5 @@ describe('MembersController', () => {
     expect(controller).toBeDefined();
   });
 });
+
 
