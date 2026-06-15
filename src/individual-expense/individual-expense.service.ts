@@ -6,6 +6,7 @@ import { CreateIndividualExpenseDto } from './dto/create-individual-expense.dto'
 import { UpdateIndividualExpenseDto } from './dto/update-individual-expense.dto';
 import { MeterReading } from '../meter_reading/entities/meter_reading.entity';
 import { Member } from '../members/entities/member.entity';
+import { CollectionAmount } from '../collection-amount/entities/collection-amount.entity';
 import { MembersService } from '../members/members.service';
 import { buildQueryOptions } from '../utils/filter.util';
 import { ExpensesService } from '../expenses/expenses.service';
@@ -22,6 +23,8 @@ export class IndividualExpenseService {
     private readonly meterReadingRepository: Repository<MeterReading>,
     @InjectRepository(Member)
     private readonly memberRepository: Repository<Member>,
+    @InjectRepository(CollectionAmount)
+    private readonly collectionRepository: Repository<CollectionAmount>,
     private readonly membersService: MembersService,
     private readonly expensesService: ExpensesService,
   ) {}
@@ -132,6 +135,35 @@ export class IndividualExpenseService {
     const totalOtherExpenses = otherExpenses.reduce((sum, e) => sum + Number(e.amount), 0);
     const splitShare = members.length > 0 ? Math.round(totalOtherExpenses / members.length) : 0;
 
+    // Fetch all collections and DB individual expenses in batch queries
+    const allCollections = await this.collectionRepository.find();
+    const allDbExpenses = await this.individualExpenseRepository.find();
+    const allGeneralExpensesRes = await this.expensesService.findAll(1, 100000);
+    const allGeneralExpenses = allGeneralExpensesRes.expenses;
+
+    const splitShareCache: Record<string, number> = {};
+    const resolveSplitShare = (monthStr: string) => {
+      if (splitShareCache[monthStr] === undefined) {
+        if (monthStr === selectedMonth) {
+          splitShareCache[monthStr] = splitShare;
+        } else {
+          const [yearStr, monthNumStr] = monthStr.split('-');
+          const year = parseInt(yearStr, 10);
+          const monthNum = parseInt(monthNumStr, 10);
+          const start = new Date(year, monthNum - 1, 1);
+          const end = new Date(year, monthNum, 0, 23, 59, 59, 999);
+
+          const monthExpenses = allGeneralExpenses.filter((e) => {
+            const d = new Date(e.date);
+            return d >= start && d <= end && e.type !== 'water';
+          });
+          const totalAmount = monthExpenses.reduce((sum, e) => sum + Number(e.amount), 0);
+          splitShareCache[monthStr] = members.length > 0 ? Math.round(totalAmount / members.length) : 0;
+        }
+      }
+      return splitShareCache[monthStr];
+    };
+
     // 4. Construct computed individual expense records in memory
     const allExpenses = members.map((member) => {
       const reading = readings.find((r) => r.flatNo === member.flatNo);
@@ -140,6 +172,30 @@ export class IndividualExpenseService {
       const meterReadingTotal = Math.max(0, current - previous);
       const waterExpense = meterReadingTotal * ratePerUnit;
       const totalExpense = Math.round(waterExpense + splitShare);
+
+      // Sum collections for this flat
+      const flatCollections = allCollections.filter((c) => c.flatNo === member.flatNo);
+      const totalCollected = flatCollections.reduce((sum, col) => sum + Number(col.amount), 0);
+
+      // Sum individual expenses for this flat (excluding current month)
+      const flatDbExpenses = allDbExpenses.filter((e) => e.flatNo === member.flatNo);
+      const otherMonthsDbExpenses = flatDbExpenses.filter((e) => {
+        const mStr = formatYearMonth(e.date);
+        return mStr !== selectedMonth;
+      });
+
+      let cumulativeExpense = 0;
+      otherMonthsDbExpenses.forEach((ie) => {
+        const monthStr = formatYearMonth(ie.date);
+        const monthSplit = resolveSplitShare(monthStr);
+        cumulativeExpense += Number(ie.totalExpense) + monthSplit;
+      });
+
+      // Add current month's calculated totalExpense
+      cumulativeExpense += totalExpense;
+
+      // Available balance = totalCollected - cumulativeExpense
+      const availableBalance = totalCollected - cumulativeExpense;
 
       return {
         id: reading ? reading.id : null,
@@ -153,6 +209,8 @@ export class IndividualExpenseService {
         waterExpense,
         otherExpenseShare: splitShare,
         totalExpense,
+        totalCollected,
+        availableBalance,
         date: reading ? new Date(reading.readingDate) : new Date(`${selectedMonth}-01`),
         notes: reading?.notes || 'No meter reading recorded',
         createdAt: reading ? reading.createdAt : new Date(),
