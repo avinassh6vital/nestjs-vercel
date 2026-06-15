@@ -75,7 +75,7 @@ describe('IndividualExpenseService', () => {
 
   describe('findAll', () => {
     it('should calculate individual expenses dynamically from active members and meter readings', async () => {
-      const mockOverview = { oneLiterCharge: 3.0 };
+      const mockOverview = { oneLiterCharge: 3.1 };
       const mockMembers = [
         { id: 'm1', flatNo: 'A101', active: true, firstName: 'John', lastName: 'Doe' },
         { id: 'm2', flatNo: 'A102', active: true, firstName: 'Jane', lastName: 'Doe' },
@@ -85,6 +85,12 @@ describe('IndividualExpenseService', () => {
       ];
 
       mockExpensesService.getOverview.mockResolvedValue(mockOverview);
+      mockExpensesService.findAll.mockResolvedValue({
+        expenses: [
+          { type: 'maintenance', amount: 205 },
+          { type: 'water', amount: 500 },
+        ],
+      });
       mockMemberRepository.find.mockResolvedValue(mockMembers);
       mockMeterReadingRepository.find.mockResolvedValue(mockReadings);
 
@@ -93,22 +99,27 @@ describe('IndividualExpenseService', () => {
       expect(mockExpensesService.getOverview).toHaveBeenCalledWith('2026-06');
       expect(mockMemberRepository.find).toHaveBeenCalledWith({ where: { active: true } });
       expect(mockMeterReadingRepository.find).toHaveBeenCalled();
+      expect(mockExpensesService.findAll).toHaveBeenCalled();
 
       expect(result.expenses).toHaveLength(2);
       
       const expA101 = result.expenses.find(e => e.flatNo === 'A101');
       expect(expA101).toBeDefined();
       expect(expA101!.meterReadingTotal).toBe(20);
-      expect(expA101!.totalExpense).toBe(60);
+      expect(expA101!.waterExpense).toBe(62); // 20 * 3.1
+      expect(expA101!.otherExpenseShare).toBe(103); // Math.round(205 / 2) = 103
+      expect(expA101!.totalExpense).toBe(165); // Math.round(62 + 103) = 165
 
       const expA102 = result.expenses.find(e => e.flatNo === 'A102');
       expect(expA102).toBeDefined();
       expect(expA102!.meterReadingTotal).toBe(0);
-      expect(expA102!.totalExpense).toBe(0);
+      expect(expA102!.waterExpense).toBe(0);
+      expect(expA102!.otherExpenseShare).toBe(103);
+      expect(expA102!.totalExpense).toBe(103);
       expect(expA102!.notes).toBe('No meter reading recorded');
       
       expect(result.total).toBe(2);
-      expect(result.totalAmount).toBe(60);
+      expect(result.totalAmount).toBe(268);
     });
   });
 });

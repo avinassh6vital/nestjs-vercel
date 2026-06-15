@@ -121,13 +121,25 @@ export class IndividualExpenseService {
       relations: ['member'],
     });
 
+    const { startDateStr, endDateStr } = this.getDateRangeForMonth(selectedMonth);
+
+    // Get all other (non-water) expenses to split among active flats
+    const expensesData = await this.expensesService.findAll(1, 1000, '', '', {
+      fromDate: startDateStr,
+      toDate: endDateStr,
+    });
+    const otherExpenses = expensesData.expenses.filter((e) => e.type !== 'water');
+    const totalOtherExpenses = otherExpenses.reduce((sum, e) => sum + Number(e.amount), 0);
+    const splitShare = members.length > 0 ? Math.round(totalOtherExpenses / members.length) : 0;
+
     // 4. Construct computed individual expense records in memory
     const allExpenses = members.map((member) => {
       const reading = readings.find((r) => r.flatNo === member.flatNo);
       const current = reading ? Number(reading.currentReading) : 0;
       const previous = reading ? Number(reading.previousReading ?? 0) : 0;
       const meterReadingTotal = Math.max(0, current - previous);
-      const totalExpense = meterReadingTotal * ratePerUnit;
+      const waterExpense = meterReadingTotal * ratePerUnit;
+      const totalExpense = Math.round(waterExpense + splitShare);
 
       return {
         id: reading ? reading.id : null,
@@ -138,6 +150,8 @@ export class IndividualExpenseService {
         meterReading: reading || null,
         meterReadingTotal,
         ratePerUnit,
+        waterExpense,
+        otherExpenseShare: splitShare,
         totalExpense,
         date: reading ? new Date(reading.readingDate) : new Date(`${selectedMonth}-01`),
         notes: reading?.notes || 'No meter reading recorded',
