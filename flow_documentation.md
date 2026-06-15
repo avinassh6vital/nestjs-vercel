@@ -36,16 +36,33 @@ sequenceDiagram
 ```
 
 ### Dynamic Individual Expense Calculation Flow
-When creating or updating an individual flat's expense, the rate per unit (`ratePerUnit`) is calculated dynamically from the monthly overview rather than manually provided in the payload.
+When retrieving individual expenses, the system dynamically calculates the values on the fly from the meter readings of all active flats.
 ```mermaid
 graph TD
-    A[Create / Update Request] --> B[Resolve Member by flatNo]
-    B --> C[Resolve flat's MeterReading for selected month]
+    A[Find All Request] --> B[Resolve Active Members]
+    B --> C[Resolve MeterReadings for selected month]
     C --> D[Compute Flat Consumption: currentReading - previousReading]
-    D --> E[Query monthly Expense Overview]
-    E --> F[Extract oneLiterCharge]
-    F --> G[Save IndividualExpense record: ratePerUnit = oneLiterCharge]
+    D --> E[Query monthly Expense Overview: oneLiterCharge]
+    E --> F[Calculate waterExpense: consumption * oneLiterCharge]
+    F --> G[Query General Expenses: totalOtherExpenses]
+    G --> H[Calculate otherExpenseShare: totalOtherExpenses / count(activeMembers)]
+    H --> I[Round otherExpenseShare and totalExpense: Math.round]
+    I --> J[Batch-query Collections & DB Expenses]
+    J --> K[Calculate totalCollected & availableBalance all-time]
+    K --> L[Return computed array synchronously]
 ```
+
+### Meter Reading Constraint Check & Auto-Update Flow
+When creating a meter reading, if a reading already exists for the flat in the target month, the system automatically updates the existing record instead of inserting a duplicate.
+```mermaid
+graph TD
+    A[Create MeterReading Request] --> B[Resolve Member by flatNo]
+    B --> C[Check if MeterReading exists for flat in month YYYY-MM]
+    C -- Yes --> D[Update existing MeterReading record]
+    D --> E[Recalculate & Sync corresponding IndividualExpense]
+    C -- No --> F[Insert new MeterReading record]
+```
+
 
 ---
 
@@ -140,9 +157,12 @@ All endpoint base URLs are prefixed with `/api`. Protected routes require the he
     "totalOtherExpenseAmount": 1500,
     "oneLiterCharge": 2,
     "totalAllExpense": 4500,
+    "totalCollected": 5000,
+    "overbal": 500,
     "meta": {
       "expensesCount": 5,
-      "meterReadingsCount": 12
+      "meterReadingsCount": 12,
+      "collectionsCount": 8
     }
   }
   ```
@@ -378,6 +398,47 @@ All endpoint base URLs are prefixed with `/api`. Protected routes require the he
 * **HTTP Method**: `GET`
 * **URL**: `/api/individual-expense?page=1&limit=10`
 * **Authorization**: None
+* **Response Payload**:
+  ```json
+  {
+    "expenses": [
+      {
+        "id": "e305e94b-48cd-40a2-9b2f-3d1246ea48d8",
+        "flatNo": "102A",
+        "memberId": "b3e8c950-8b1e-4c5c-9c3f-4e50d80c1d51",
+        "member": {
+          "id": "b3e8c950-8b1e-4c5c-9c3f-4e50d80c1d51",
+          "firstName": "John",
+          "lastName": "Doe",
+          "flatNo": "102A"
+        },
+        "meterReadingId": "6a9e88bf-9eb8-4223-9e4a-5f50a80e1d51",
+        "meterReading": {
+          "id": "6a9e88bf-9eb8-4223-9e4a-5f50a80e1d51",
+          "flatNo": "102A",
+          "currentReading": 520.4,
+          "previousReading": 480.2,
+          "readingDate": "2026-06-11"
+        },
+        "meterReadingTotal": 40.2,
+        "ratePerUnit": 2,
+        "waterExpense": 80.4,
+        "otherExpenseShare": 125,
+        "totalExpense": 205,
+        "totalCollected": 12000,
+        "availableBalance": 2295,
+        "date": "2026-06-11T00:00:00.000Z",
+        "notes": "June regular reading",
+        "createdAt": "2026-06-11T16:00:00.000Z",
+        "updatedAt": "2026-06-11T16:00:00.000Z"
+      }
+    ],
+    "total": 1,
+    "page": 1,
+    "limit": 10,
+    "totalAmount": 205
+  }
+  ```
 
 #### 3. Find One Individual Expense
 * **HTTP Method**: `GET`
