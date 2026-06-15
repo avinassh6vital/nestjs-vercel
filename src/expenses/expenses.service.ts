@@ -6,6 +6,7 @@ import { Repository, Between, Like } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { buildQueryOptions } from '../utils/filter.util';
 import { MeterReading } from '../meter_reading/entities/meter_reading.entity';
+import { CollectionAmount } from '../collection-amount/entities/collection-amount.entity';
 
 @Injectable()
 export class ExpensesService {
@@ -15,6 +16,8 @@ export class ExpensesService {
       private expensesRepository: Repository<Expense>,
       @InjectRepository(MeterReading)
       private meterReadingRepository: Repository<MeterReading>,
+      @InjectRepository(CollectionAmount)
+      private collectionAmountRepository: Repository<CollectionAmount>,
     ) {}
 
    async create(createExpenseDto: CreateExpenseDto, createdBy?: string) {
@@ -110,6 +113,14 @@ export class ExpensesService {
 
     const oneLiterCharge = totalMeterReading > 0 ? totalWaterAmount / totalMeterReading : 0;
 
+    const collections = await this.collectionAmountRepository.find({
+      where: {
+        date: Between(startDate, endDate),
+      },
+    });
+    const totalCollected = collections.reduce((sum, col) => sum + Number(col.amount), 0);
+    const overbal = totalCollected - totalAllExpense;
+
     return {
       selectedMonth,
       totalMeterReading,
@@ -117,9 +128,12 @@ export class ExpensesService {
       totalOtherExpenseAmount,
       oneLiterCharge,
       totalAllExpense,
+      totalCollected,
+      overbal,
       meta: {
         expensesCount: expenses.length,
         meterReadingsCount: meterReadings.length,
+        collectionsCount: collections.length,
       },
     };
   }
