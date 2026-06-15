@@ -5,6 +5,7 @@ import { IndividualExpense } from './entities/individual-expense.entity';
 import { CreateIndividualExpenseDto } from './dto/create-individual-expense.dto';
 import { UpdateIndividualExpenseDto } from './dto/update-individual-expense.dto';
 import { MeterReading } from '../meter_reading/entities/meter_reading.entity';
+import { Member } from '../members/entities/member.entity';
 import { MembersService } from '../members/members.service';
 import { buildQueryOptions } from '../utils/filter.util';
 import { ExpensesService } from '../expenses/expenses.service';
@@ -19,6 +20,8 @@ export class IndividualExpenseService {
     private readonly individualExpenseRepository: Repository<IndividualExpense>,
     @InjectRepository(MeterReading)
     private readonly meterReadingRepository: Repository<MeterReading>,
+    @InjectRepository(Member)
+    private readonly memberRepository: Repository<Member>,
     private readonly membersService: MembersService,
     private readonly expensesService: ExpensesService,
   ) {}
@@ -89,31 +92,133 @@ export class IndividualExpenseService {
     sort = '',
     filters: Record<string, any> = {},
   ) {
-    const searchFields = ['notes'];
-    const queryOptions = buildQueryOptions<IndividualExpense>(
-      this.individualExpenseRepository,
-      page,
-      limit,
-      searchTerm,
-      sort,
-      filters,
-      searchFields,
-    );
-    queryOptions.relations = ['member', 'meterReading'];
+    // Resolve target month from query filters, default to current month YYYY-MM
+    let selectedMonth = new Date().toISOString().substring(0, 7);
+    if (filters) {
+      if (typeof filters.date === 'string') {
+        selectedMonth = filters.date.substring(0, 7);
+      } else if (typeof filters.fromDate === 'string') {
+        selectedMonth = filters.fromDate.substring(0, 7);
+      } else if (typeof filters.toDate === 'string') {
+        selectedMonth = filters.toDate.substring(0, 7);
+      }
+    }
 
-    const [data, total] = await this.individualExpenseRepository.findAndCount(queryOptions);
+    // 1. Get billing overview to get dynamic rate
+    const overview = await this.expensesService.getOverview(selectedMonth);
+    const ratePerUnit = overview.oneLiterCharge;
 
-    const mappedData = data.map((item) => ({
-      ...item,
-      meterReadingTotal: Number(item.meterReadingTotal),
-      ratePerUnit: Number(item.ratePerUnit),
-      totalExpense: Number(item.totalExpense),
-    }));
+    // 2. Find all active members
+    const members = await this.memberRepository.find({
+      where: { active: true },
+    });
 
-    const totalAmount = mappedData.reduce((sum, item) => sum + item.totalExpense, 0);
+    // 3. Find all meter readings for the target month
+    const readings = await this.meterReadingRepository.find({
+      where: {
+        readingDate: Like(`${selectedMonth}%`),
+      },
+      relations: ['member'],
+    });
+
+    // 4. Construct computed individual expense records in memory
+    const allExpenses = members.map((member) => {
+      const reading = readings.find((r) => r.flatNo === member.flatNo);
+      const current = reading ? Number(reading.currentReading) : 0;
+      const previous = reading ? Number(reading.previousReading ?? 0) : 0;
+      const meterReadingTotal = Math.max(0, current - previous);
+      const totalExpense = meterReadingTotal * ratePerUnit;
+
+      return {
+        id: reading ? reading.id : null,
+        flatNo: member.flatNo,
+        memberId: member.id,
+        member,
+        meterReadingId: reading ? reading.id : null,
+        meterReading: reading || null,
+        meterReadingTotal,
+        ratePerUnit,
+        totalExpense,
+        date: reading ? new Date(reading.readingDate) : new Date(`${selectedMonth}-01`),
+        notes: reading?.notes || 'No meter reading recorded',
+        createdAt: reading ? reading.createdAt : new Date(),
+        updatedAt: reading ? reading.updatedAt : new Date(),
+      };
+    });
+
+    // 5. In-memory filtering (Search)
+    let filteredExpenses = allExpenses;
+    if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase();
+      filteredExpenses = allExpenses.filter(
+        (exp) =>
+          exp.flatNo.toLowerCase().includes(searchLower) ||
+          exp.notes.toLowerCase().includes(searchLower) ||
+          `${exp.member.firstName} ${exp.member.lastName}`
+            .toLowerCase()
+            .includes(searchLower),
+      );
+    }
+
+    // 6. In-memory filtering (Filters)
+    if (filters) {
+      Object.keys(filters).forEach((key) => {
+        if (key === 'date' || key === 'fromDate' || key === 'toDate') {
+          return; // Already resolved for selectedMonth
+        }
+        const val = filters[key];
+        if (val === undefined || val === null || val === '') {
+          return;
+        }
+        const valStr = String(val).toLowerCase();
+        if (key === 'flatNo') {
+          filteredExpenses = filteredExpenses.filter((exp) =>
+            exp.flatNo.toLowerCase().includes(valStr),
+          );
+        } else if (key === 'memberId') {
+          filteredExpenses = filteredExpenses.filter((exp) => exp.memberId === val);
+        }
+      });
+    }
+
+    // 7. In-memory Sorting
+    if (sort) {
+      const sortFields = sort.split(',');
+      sortFields.forEach((field) => {
+        const [key, direction] = field.split(':');
+        const isDesc = direction?.toUpperCase() === 'DESC';
+        filteredExpenses.sort((a: any, b: any) => {
+          let valA = a[key];
+          let valB = b[key];
+
+          if (key === 'memberName') {
+            valA = `${a.member.firstName} ${a.member.lastName}`;
+            valB = `${b.member.firstName} ${b.member.lastName}`;
+          }
+
+          if (valA === valB) return 0;
+          if (valA === null || valA === undefined) return 1;
+          if (valB === null || valB === undefined) return -1;
+
+          if (typeof valA === 'string' && typeof valB === 'string') {
+            return isDesc ? valB.localeCompare(valA) : valA.localeCompare(valB);
+          }
+          return isDesc ? (valB > valA ? 1 : -1) : valA > valB ? 1 : -1;
+        });
+      });
+    } else {
+      // Default sorting: sort by flatNo ASC
+      filteredExpenses.sort((a, b) => a.flatNo.localeCompare(b.flatNo));
+    }
+
+    // 8. Pagination and totals calculation
+    const total = filteredExpenses.length;
+    const skip = (page - 1) * limit;
+    const paginatedExpenses = filteredExpenses.slice(skip, skip + limit);
+    const totalAmount = filteredExpenses.reduce((sum, item) => sum + item.totalExpense, 0);
 
     return {
-      expenses: mappedData,
+      expenses: paginatedExpenses,
       total,
       page,
       limit,
