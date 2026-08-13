@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { CreateMeterReadingDto } from './dto/create-meter_reading.dto';
 import { UpdateMeterReadingDto } from './dto/update-meter_reading.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -11,7 +15,6 @@ import { ExpensesService } from '../expenses/expenses.service';
 
 @Injectable()
 export class MeterReadingService {
-
   constructor(
     @InjectRepository(MeterReading)
     private meterReadingRepository: Repository<MeterReading>,
@@ -21,8 +24,13 @@ export class MeterReadingService {
     private readonly expensesService: ExpensesService,
   ) {}
 
-  async create(createMeterReadingDto: CreateMeterReadingDto, createdBy?: string) {
-    const member = await this.membersService.findByFlatNo(createMeterReadingDto.flatNo);
+  async create(
+    createMeterReadingDto: CreateMeterReadingDto,
+    createdBy?: string,
+  ) {
+    const member = await this.membersService.findByFlatNo(
+      createMeterReadingDto.flatNo,
+    );
     if (!member) {
       throw new NotFoundException(
         `Active member with flat number ${createMeterReadingDto.flatNo} not found`,
@@ -31,7 +39,8 @@ export class MeterReadingService {
 
     if (
       createMeterReadingDto.previousReading !== undefined &&
-      createMeterReadingDto.currentReading < createMeterReadingDto.previousReading
+      createMeterReadingDto.currentReading <
+        createMeterReadingDto.previousReading
     ) {
       throw new BadRequestException(
         `Invalid consumption calculation: current reading (${createMeterReadingDto.currentReading}) is less than previous reading (${createMeterReadingDto.previousReading})`,
@@ -63,6 +72,15 @@ export class MeterReadingService {
     return saved;
   }
 
+  async bulkCreate(readings: CreateMeterReadingDto[], createdBy?: string) {
+    const results: any[] = [];
+    for (const reading of readings) {
+      const result = await this.create(reading, createdBy);
+      results.push(result);
+    }
+    return results;
+  }
+
   async findAll(
     page = 1,
     limit = 10,
@@ -82,17 +100,22 @@ export class MeterReadingService {
     );
     queryOptions.relations = ['member'];
 
-    const [meterReadings, total] = await this.meterReadingRepository.findAndCount(queryOptions);
-    
-    const mappedMeterReadings = meterReadings.map(item => ({
+    const [meterReadings, total] =
+      await this.meterReadingRepository.findAndCount(queryOptions);
+
+    const mappedMeterReadings = meterReadings.map((item) => ({
       ...item,
       currentReading: Number(item.currentReading),
-      previousReading: item.previousReading !== null && item.previousReading !== undefined 
-      ? Number(item.previousReading) 
-      : undefined,
+      previousReading:
+        item.previousReading !== null && item.previousReading !== undefined
+          ? Number(item.previousReading)
+          : undefined,
     }));
 
-    const totalAmount = mappedMeterReadings.reduce((sum, item) => sum + item.currentReading, 0);
+    const totalAmount = mappedMeterReadings.reduce(
+      (sum, item) => sum + item.currentReading,
+      0,
+    );
 
     return {
       meterReadings: mappedMeterReadings,
@@ -110,17 +133,26 @@ export class MeterReadingService {
     });
     if (meterReading) {
       meterReading.currentReading = Number(meterReading.currentReading);
-      if (meterReading.previousReading !== null && meterReading.previousReading !== undefined) {
+      if (
+        meterReading.previousReading !== null &&
+        meterReading.previousReading !== undefined
+      ) {
         meterReading.previousReading = Number(meterReading.previousReading);
       }
     }
     return meterReading;
   }
 
-  async update(id: string, updateMeterReadingDto: UpdateMeterReadingDto, updatedBy?: string) {
+  async update(
+    id: string,
+    updateMeterReadingDto: UpdateMeterReadingDto,
+    updatedBy?: string,
+  ) {
     const updateData: any = { ...updateMeterReadingDto, updatedBy };
     if (updateMeterReadingDto.flatNo) {
-      const member = await this.membersService.findByFlatNo(updateMeterReadingDto.flatNo);
+      const member = await this.membersService.findByFlatNo(
+        updateMeterReadingDto.flatNo,
+      );
       if (!member) {
         throw new NotFoundException(
           `Active member with flat number ${updateMeterReadingDto.flatNo} not found`,
@@ -175,4 +207,3 @@ export class MeterReadingService {
     return { deleted: true };
   }
 }
-

@@ -24,12 +24,49 @@ export class MeterReadingController {
 
   @UseGuards(AuthGuard)
   @Post()
-  async create(@Body() createMeterReadingDto: CreateMeterReadingDto, @Request() req: any) {
+  async create(
+    @Body() createMeterReadingDto: CreateMeterReadingDto,
+    @Request() req: any,
+  ) {
     try {
       const userId = req.user?.sub;
-      const data = await this.meterReadingService.create(createMeterReadingDto, userId);
+      const data = await this.meterReadingService.create(
+        createMeterReadingDto,
+        userId,
+      );
       return {
         message: 'Added successfully',
+        data,
+      };
+    } catch (error) {
+      throw new HttpException(
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
+        error.message || 'Internal server error',
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
+        error.status || HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @UseGuards(AuthGuard)
+  @Post('bulk')
+  async bulkCreate(
+    @Body() createMeterReadingDtos: CreateMeterReadingDto[],
+    @Request() req: any,
+  ) {
+    try {
+      const userId = req.user?.sub;
+      const sanitizedReadings = createMeterReadingDtos.map((reading) => ({
+        ...reading,
+        flatNo: String(reading.flatNo),
+      }));
+      const data = await this.meterReadingService.bulkCreate(
+        sanitizedReadings,
+        userId,
+      );
+      return {
+        message: 'Bulk insert successfully completed',
+        count: data.length,
         data,
       };
     } catch (error) {
@@ -91,7 +128,10 @@ export class MeterReadingController {
     try {
       const data = await this.meterReadingService.findOne(uuid);
       if (!data) {
-        throw new HttpException('Meter reading not found', HttpStatus.NOT_FOUND);
+        throw new HttpException(
+          'Meter reading not found',
+          HttpStatus.NOT_FOUND,
+        );
       }
       return data;
     } catch (error) {
@@ -162,5 +202,3 @@ export class MeterReadingController {
     }
   }
 }
-
-
